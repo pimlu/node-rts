@@ -16,12 +16,13 @@ if(RTSGBL.isNode) {
   PQ = PriorityQueue;
 }
 
-RTSGame.prototype.init = function(nodes, w, h) {
+RTSGame.prototype.init = function(nodes, size) {
   this.nodes = [];
+  
   for(var i=0; i<nodes; i++) {
     this.nodes.push(new RTSNode(i,
-      Math.random()*w, Math.random()*h,
-      30, //TODO placeholder
+      (Math.random()-1/2)*size, (Math.random()-1/2)*size,
+      20, //TODO placeholder
       i < 2 ? i+1 : 0 //2 players, rest unowned
     ));
   }

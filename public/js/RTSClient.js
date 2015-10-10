@@ -11,19 +11,26 @@ function RTSClient(div, gameId) {
   stats.domElement.style.right = '0px';
   stats.domElement.style.top = '0px';
 
+  this.width = 800;
+  this.height = 600;
   
   //put a canvas in
-  this.c = $('<canvas width="800" height="600"></canvas>')[0];
+  this.c = $('<canvas width="'+this.width+'" height="'+this.height+'"></canvas>')[0];
   $(div).empty().append(this.c).append(stats.domElement);
   
   this.game = new RTSGame();
   //normally happens on the server
-  this.game.init(10,800,600);
+  this.game.init(10,600);
   
   var stage = this.stage = new createjs.Stage(this.c);
+  //actual playing field, gets transformed
+  this.field = new createjs.Container();
+  this.field.x = this.width/2;
+  this.field.y = this.height/2;
+  stage.addChild(this.field);
   //holds each node in our game
   var nodeConts = this.nodeConts = new createjs.Container();
-  stage.addChild(nodeConts);
+  this.field.addChild(nodeConts);
   
   //RAF on our tick function
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
