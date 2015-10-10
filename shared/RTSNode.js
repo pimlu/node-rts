@@ -22,9 +22,12 @@ RTSNode.prototype.attack = function(id) {
   });
 };
 
+RTSNode.prototype.step = function(dt) {
+  this.pop = Math.min(this.maxPop, this.pop + dt*this.getGrowth());
+};
 
-RTSNode.prototype.getGrow = function() {
-  return this.size/5+this.pop/10;
+RTSNode.prototype.getGrowth = function() {
+  return this.size/10+this.pop/8;
 };
 
 RTSNode.prototype.getMaxPop = function() {

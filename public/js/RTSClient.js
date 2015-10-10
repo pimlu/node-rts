@@ -47,6 +47,8 @@ RTSClient.prototype.tick = function(event) {
   
   this.stats.begin();
   
+  this.game.step(event.delta / 1000);
+  
   var nodes = this.game.nodes;
   
   //make a new set of circles if our # of nodes in easel and the game state don't match

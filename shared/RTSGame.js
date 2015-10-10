@@ -16,10 +16,10 @@ if(RTSGBL.isNode) {
   PQ = PriorityQueue;
 }
 
-RTSGame.prototype.init = function(nodes, size) {
+RTSGame.prototype.init = function(nodeCount, size) {
   this.nodes = [];
   
-  for(var i=0; i<nodes; i++) {
+  for(var i=0; i<nodeCount; i++) {
     this.nodes.push(new RTSNode(i,
       (Math.random()-1/2)*size, (Math.random()-1/2)*size,
       20, //TODO placeholder
@@ -30,7 +30,12 @@ RTSGame.prototype.init = function(nodes, size) {
 
 //receives an amount of time it steps by
 RTSGame.prototype.step = function(dt) {
-  
+  var nodes = this.nodes
+  for(var i=0; i<this.nodes.length; i++) {
+    //TODO better integration
+    var node = nodes[i];
+    node.step(dt);
+  }
 };
 
 //loads a state
