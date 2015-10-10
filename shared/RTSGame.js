@@ -1,6 +1,6 @@
 var PQ;
 //has game state, no rendering
-function RTSGame(server) {
+function RTSGame() {
   this.nodes = null;
   this.queue = new PriorityQueue({
     comparator: function(a, b) {
@@ -19,7 +19,7 @@ if(RTSGBL.isNode) {
 RTSGame.prototype.init = function(nodes, w, h) {
   this.nodes = [];
   for(var i=0; i<nodes; i++) {
-    this.nodes.push(new Node(i,
+    this.nodes.push(new RTSNode(i,
       Math.random()*w, Math.random()*h,
       30, //TODO placeholder
       i < 2 ? i+1 : 0 //2 players, rest unowned
