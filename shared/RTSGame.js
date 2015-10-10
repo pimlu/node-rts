@@ -34,7 +34,7 @@ RTSGame.prototype.step = function(dt) {
   for(var i=0; i<this.nodes.length; i++) {
     //TODO better integration
     var node = nodes[i];
-    node.step(dt);
+    node.step(dt, nodes);
   }
 };
 
