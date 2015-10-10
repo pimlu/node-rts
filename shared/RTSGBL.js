@@ -12,6 +12,9 @@ var RTSGBL = {
   now: function() {
     //TODO time sync?
     return +new Date();
+  },
+  actionTime: function() {
+    return RTSGBL.now()+RTSGBL.delay*1000;
   }
 };
 if(RTSGBL.isNode) global.RTSGBL = RTSGBL;

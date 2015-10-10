@@ -101,7 +101,21 @@ RTSClient.prototype.clickCircle = function(index) {
   //selects nodes to command (shift selects multiple)
   if(nodes[index].owner === this.team) {
     this.selected[index] = !oldSelected[index];
-  } else { //comands nodes to attack
-    
+  } else {
+    //maps oldSelected to a list of the truthy values in it
+    var selectedList = _.filter(oldSelected.map(function(v,i) {
+        return {v:v,i:i};
+      }), _.matchesProperty('v', true))
+      .map(_.property('i'));
+    //just the nodes with the energy to attack
+    var canAttack = selectedList.filter(function(v) {
+      return nodes[v].pop >= 5;
+    });
+    if(canAttack.length) { //comands nodes to attack
+      this.game.queueEvent('ATTACK', {
+        src: canAttack,
+        dst: index
+      });
+    }
   }
 };

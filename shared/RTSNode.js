@@ -45,7 +45,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         
         //in ATTACKING, move forward; if you've made it, start hitting
         attack.dist += ddist;
-        var realDist = this.dist(node);
+        var realDist = this.dist(nodes[attack.id]);
         if(attack.dist > realDist) {
           attack.dist = realDist;
           attack.mode = RTSNode.HITTING;

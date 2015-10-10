@@ -4,10 +4,14 @@ function RTSGame() {
   this.nodes = null;
   this.queue = new PriorityQueue({
     comparator: function(a, b) {
-      return a - b;
+      return a.time - b.time;
     }
   });
 }
+
+'ATTACK,CUT'.split(',').forEach(function(v,i) {
+  RTSGame[v] = i;
+});
 
 if(RTSGBL.isNode) {
   global.RTSGame = RTSGame;
@@ -30,7 +34,12 @@ RTSGame.prototype.init = function(nodeCount, size) {
 
 //receives an amount of time it steps by
 RTSGame.prototype.step = function(dt) {
-  var nodes = this.nodes
+  var nodes = this.nodes;
+  var now = RTSGBL.now();
+  while(this.queue.length && this.queue.peek().time < now) {
+    var nextEvt = this.queue.dequeue();
+    this.doEvent(nextEvt);
+  }
   for(var i=0; i<this.nodes.length; i++) {
     //TODO better integration
     var node = nodes[i];
@@ -43,6 +52,23 @@ RTSGame.prototype.loadState = function(state) {
   
 };
 
-RTSGame.prototype.doEvent = function(source, msg) {
-  
+RTSGame.prototype.queueEvent = function(type, e, manualTime) {
+  e.type = RTSGame[type];
+  if(!manualTime) e.time = RTSGBL.actionTime();
+  this.queue.queue(e);
+};
+
+RTSGame.prototype.doEvent = function(event) {
+  log.debug(event);
+  var nodes = this.nodes;
+  switch(event.type) {
+    case RTSGame.ATTACK:
+      event.src.forEach(function(index) {
+        nodes[index].attack(event.dst);
+      });
+      break;
+    case RTSGame.CUT:
+      //FIXME
+      break;
+  }
 };
