@@ -1,6 +1,10 @@
 function drawCircle(shape, color, rad) {
   shape.graphics.beginFill(color).drawCircle(0, 0, rad);
 }
+var shiftDown = false;
+$(document).on('keyup keydown', function(e){
+  shiftDown = e.shiftKey;
+});
 
 function RTSClient(div, gameId) {
   var stats = this.stats = new Stats();
@@ -20,21 +24,24 @@ function RTSClient(div, gameId) {
   
   this.game = new RTSGame();
   //normally happens on the server
-  this.game.init(10,600);
+  this.game.init(10, 600);
   
-  var stage = this.stage = new createjs.Stage(this.c);
+  this.stage = new createjs.Stage(this.c);
   //actual playing field, gets transformed
   this.field = new createjs.Container();
   this.field.x = this.width/2;
   this.field.y = this.height/2;
-  stage.addChild(this.field);
+  this.stage.addChild(this.field);
   //holds each node in our game
   var nodeConts = this.nodeConts = new createjs.Container();
   this.field.addChild(nodeConts);
   
+  this.selected = [];
+  
   //RAF on our tick function
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
 	createjs.Ticker.addEventListener("tick", this.tick.bind(this));
+  
 }
 
 RTSClient.prototype.tick = function(event) {
@@ -45,6 +52,7 @@ RTSClient.prototype.tick = function(event) {
   
   //make a new set of circles if our # of nodes in easel and the game state don't match
   if(this.nodeConts.numChildren !== nodes.length) {
+    this.selected = [];
     this.nodeConts.removeAllChildren();
     for(var i=0; i<nodes.length; i++) {
       //create a container for the whole node
@@ -52,11 +60,13 @@ RTSClient.prototype.tick = function(event) {
       this.nodeConts.addChild(cont);
       //add the shapes of the container
       var size = new createjs.Shape();
-      drawCircle(size, 'grey', nodes[i].size);
       cont.addChild(size);
       var pop = new createjs.Shape();
       //pop changes each frame
       cont.addChild(pop);
+      
+      //listen for clicks
+      cont.addEventListener('click', this.clickCircle.bind(this, i));
     }
   }
   //update the existing nodes
@@ -65,12 +75,26 @@ RTSClient.prototype.tick = function(event) {
     var nodeCont = this.nodeConts.children[i];
     nodeCont.x = node.x;
     nodeCont.y = node.y;
+    var size = nodeCont.children[0];
     var pop = nodeCont.children[1];
     var color = ['lightgrey', 'red', 'blue'][node.owner];
+    
+    size.graphics.clear();
+    if(this.selected[i]) size.graphics.setStrokeStyle(2).beginStroke('black')
+    drawCircle(size, 'grey', node.size);
     pop.graphics.clear();
     drawCircle(pop, color, node.size*Math.sqrt(node.pop/node.maxPop));
   }
   this.stage.update(event);
   
   this.stats.end();
+};
+
+RTSClient.prototype.clickCircle = function(index) {
+  log.debug('CLICK %s %s', index, shiftDown);
+  var oldSelected = this.selected;
+  if(!shiftDown) {
+    this.selected = new Array(this.game.nodes.length);
+  }
+  this.selected[index] = !oldSelected[index];
 };
