@@ -1,0 +1,22 @@
+{
+  "name": "node-rts",
+  "version": "0.0.0",
+  "authors": [
+    "pimlu <pimlu@users.noreply.github.com>"
+  ],
+  "description": "node rts",
+  "main": "app.js",
+  "license": "GPL3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "public/js/bower",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "EaselJS": "easeljs#~0.8.1",
+    "jquery": "~2.1.4",
+    "loglevel": "~1.4.0"
+  }
+}
