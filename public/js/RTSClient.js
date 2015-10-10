@@ -23,8 +23,6 @@ function RTSClient(div, gameId) {
   $(div).empty().append(this.c).append(stats.domElement);
   
   this.game = new RTSGame();
-  //normally happens on the server
-  this.game.init(10, 600);
   
   this.stage = new createjs.Stage(this.c);
   //actual playing field, gets transformed
@@ -37,6 +35,7 @@ function RTSClient(div, gameId) {
   this.field.addChild(nodeConts);
   
   this.selected = [];
+  this.team = -1;
   
   //RAF on our tick function
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
@@ -92,9 +91,15 @@ RTSClient.prototype.tick = function(event) {
 
 RTSClient.prototype.clickCircle = function(index) {
   log.debug('CLICK %s %s', index, shiftDown);
+  var nodes = this.game.nodes;
   var oldSelected = this.selected;
   if(!shiftDown) {
     this.selected = new Array(this.game.nodes.length);
   }
-  this.selected[index] = !oldSelected[index];
+  //selects nodes to command (shift selects multiple)
+  if(nodes[index].owner === this.team) {
+    this.selected[index] = !oldSelected[index];
+  } else { //comands nodes to attack
+    
+  }
 };
