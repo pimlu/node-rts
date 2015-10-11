@@ -1,9 +1,12 @@
 function drawCircle(shape, color, rad) {
   shape.graphics.beginFill(color).drawCircle(0, 0, rad);
 }
-var shiftDown = false;
+var shiftDown = false, zDown = false;
 $(document).on('keyup keydown', function(e){
   shiftDown = e.shiftKey;
+  if(String.fromCharCode(e.keyCode) === 'Z') {
+    zDown = e.type === 'keydown';
+  }
 });
 
 function RTSClient(div, gameId) {
@@ -208,7 +211,7 @@ RTSClient.prototype.clickCircle = function(index) {
     this.selected = new Array(this.game.nodes.length);
   }
   //selects nodes to command (shift selects multiple)
-  if(nodes[index].owner === this.team) {
+  if(!zDown && nodes[index].owner === this.team) {
     this.selected[index] = !oldSelected[index];
   } else {
     //maps oldSelected to a list of the truthy values in it
