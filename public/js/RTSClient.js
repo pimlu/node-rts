@@ -54,8 +54,10 @@ function RTSClient(div, gameId) {
   
 }
 
+
 RTSClient.prototype.stageDown = function(event) {
   if(event.relatedTarget) return;
+  if(!shiftDown) this.selected = [];
   var coords = [event.stageX, event.stageY];
   this.dragState = {start: coords, end: coords.slice()};
 };
@@ -64,8 +66,42 @@ RTSClient.prototype.stageMove = function(event) {
   this.dragState.end = [event.stageX, event.stageY];
 };
 RTSClient.prototype.stageUp = function(event) {
+  
   if(this.dragState) {
     this.dragState.end = [event.stageX, event.stageY];
+    //var start = this.field.globalToLocal.apply(this.field, this.dragState.start);
+    //var end = this.field.globalToLocal.apply(this.field, this.dragState.end);
+    var nodes = this.game.nodes;
+    var nodeConts = this.nodeConts;
+    var src = [], dst = [];
+    for(var i=0; i<nodes.length; i++) {
+      var node = nodes[i];
+      //only cut our team's nodes
+      if(node.owner !== this.team) continue;
+      var attacks = node.attacks;
+      var data = nodeConts.children[i].children[2]._data;
+      for(var j=0; j<attacks.length;j++) {
+        var attack = attacks[j];
+        if(attack.mode === RTSNode.RECEDING) continue;
+        //test for intersection
+        var p = {x: this.dragState.start[0], y: this.dragState.start[1]};
+        var p2 = {x: event.stageX, y: event.stageY};
+        var q = data[j].q;
+        var q2 = data[j].q2;
+        var intersect = doLineSegmentsIntersect(p, p2, q, q2);
+        //if they intersect, push to our lists of sources and destinations
+        if(intersect) {
+          src.push(i);
+          dst.push(attack.id);
+        }
+      }
+    }
+    if(src.length) {
+      this.game.queueEvent('CUT', this.team, {
+        src: src,
+        dst: dst
+      });
+    }
   }
   this.dragState = null;
 };
@@ -120,7 +156,7 @@ RTSClient.prototype.tick = function(event) {
     lines.graphics.setStrokeStyle(3).beginStroke(playerColor);
     attackCont.addChild(lines);
     
-    
+    attackCont._data = [];
     //for each attack, draw a line starting at the edge of the attacker circle
     //moving out dist pixels directly towards the target
     for(var j=0; j<node.attacks.length; j++) {
@@ -136,10 +172,13 @@ RTSClient.prototype.tick = function(event) {
       var tgtRatio = attack.dist/fullDist;
       
       var mtDx = dx*nodeRatio, mtDy = dy*nodeRatio;
-      
+      var ltDx = mtDx + dx*tgtRatio, ltDy = mtDy + dy*tgtRatio;
       lines.graphics.moveTo(mtDx, mtDy)
-        .lineTo(mtDx + dx*tgtRatio, mtDy + dy*tgtRatio);
-      
+        .lineTo(ltDx, ltDy);
+      attackCont._data.push({
+        q:  lines.localToGlobal(mtDx, mtDy),
+        q2: lines.localToGlobal(ltDx, ltDy)
+      });
     }
   }
   //update the cut
@@ -182,7 +221,7 @@ RTSClient.prototype.clickCircle = function(index) {
       return nodes[v].pop >= RTSGBL.attPop;
     });
     if(canAttack.length) { //comands nodes to attack
-      this.game.queueEvent('ATTACK', {
+      this.game.queueEvent('ATTACK', this.team, {
         src: canAttack,
         dst: index
       });

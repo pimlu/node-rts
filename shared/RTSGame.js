@@ -52,8 +52,9 @@ RTSGame.prototype.loadState = function(state) {
   
 };
 
-RTSGame.prototype.queueEvent = function(type, e, manualTime) {
+RTSGame.prototype.queueEvent = function(type, source, e, manualTime) {
   e.type = RTSGame[type];
+  e.source = source;
   if(!manualTime) e.time = RTSGBL.actionTime();
   this.queue.queue(e);
 };
@@ -64,11 +65,22 @@ RTSGame.prototype.doEvent = function(event) {
   switch(event.type) {
     case RTSGame.ATTACK:
       event.src.forEach(function(index) {
+        var node = nodes[index];
+        if(!node || event.source !== node.owner) return; //for security purposes
         nodes[index].attack(event.dst);
       });
       break;
     case RTSGame.CUT:
-      //FIXME
+      event.src.forEach(function(index, i) {
+        var node = nodes[index];
+        if(!node || event.source !== node.owner) return;
+        //find the matching
+        var attack = node.attacks.find(
+          _.matchesProperty('id', event.dst[i])
+        );
+        if(!attack) return;
+        attack.mode = RTSNode.RECEDING;
+      });
       break;
   }
 };
