@@ -129,7 +129,7 @@ RTSClient.prototype.onMessage = function(e) {
       });
     }, 500);
     
-    var step = 0.2;
+    var step = 0.03;
     if(data.start) {
       to(function timeout() {
         var now = self.game.now();
