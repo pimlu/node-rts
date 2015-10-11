@@ -17,6 +17,8 @@ var RTSGBL = {
   attPop: 5,
   //min pop to hit
   hitPop: 2,
+  //how quickly the wizard mode cost increases
+  wizCoef: 0.5,
   now: function() {
     //TODO time sync?
     return +new Date();

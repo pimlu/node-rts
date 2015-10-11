@@ -8,11 +8,12 @@ function RTSNode(id, x, y, size, owner) {
   this.owner = owner;
   this.attacks = [];
   this.incoming = [];
+  this.wizDur = 0;
 }
 if(RTSGBL.isNode) global.RTSNode = RTSNode;
 
 //enum for modes of attack
-'ATTACKING,HITTING,RECEDING'.split(',').forEach(function(v,i) {
+'ATTACKING,HITTING,RECEDING,WIZARD'.split(',').forEach(function(v,i) {
   RTSNode[v] = i;
 });
 
@@ -40,9 +41,11 @@ RTSNode.prototype.attack = function(id) {
 
 RTSNode.prototype.step = function(dt, nodes) {
   this.pop = Math.min(this.maxPop, this.pop + dt*this.getGrowth());
+  this.wizDur = Math.max(0, this.wizDur-dt);
   var attacks = this.attacks;
   for(var i=0; i<attacks.length; i++) {
     var attack = attacks[i];
+    var target = nodes[attack.id];
     switch(attack.mode) {
       case RTSNode.ATTACKING:
         var ddist = dt*RTSGBL.speed;
@@ -50,12 +53,26 @@ RTSNode.prototype.step = function(dt, nodes) {
         //if we can't afford any more of this, recede
         if(this.pop - RTSGBL.attCost*ddist < RTSGBL.attPop) {
           attack.mode = RTSNode.RECEDING;
-          i--; continue; //do this one over again, except receding
+          break;
         }
         
         //in ATTACKING, move forward; if you've made it, start hitting
         attack.dist += ddist;
-        var realDist = this.dist(nodes[attack.id]);
+        var realDist = this.dist(target);
+        
+        //if we're about to collide with another beam head-on, react
+        var tgtAttacks = target.attacks;
+        var tgtAttack = _.find(tgtAttacks, _.matchesProperty('id', this.id));
+        if(tgtAttack && attack.dist + tgtAttack.dist > realDist) {
+          //if they're friendly, recede
+          if(this.owner === target.owner) {
+            attack.mode = tgtAttack.mode = RTSNode.RECEDING;
+          } else { //if they're not friendly, enter WIZARD MODE!
+            attack.mode = tgtAttack.mode = RTSNode.WIZARD;
+          }
+          break;
+        }
+        
         if(attack.dist > realDist) {
           attack.dist = realDist;
           attack.mode = RTSNode.HITTING;
@@ -67,26 +84,21 @@ RTSNode.prototype.step = function(dt, nodes) {
         //if we can't afford any more of this, recede
         if(this.pop < RTSGBL.hitPop) {
           attack.mode = RTSNode.RECEDING;
-          i--; continue; //do this one over again, except receding
+          break;
         }
-        var target = nodes[attack.id];
         var dpop = RTSGBL.attSpeed*dt;
         //supply troops, or attack, based on ownership
         if(target.owner === this.owner) {
           //recede if full (don't waste)
           if(target.pop >= target.maxPop) {
             attack.mode = RTSNode.RECEDING;
-            i--; continue; //do this one over again, except receding
+            break;
           }
           target.pop += dpop;
         } else {
-          target.pop -= RTSGBL.attRatio*dpop;
-          if(target.pop < 0) {
-            target.owner = this.owner;
-            target.pop = dpop;
-          }
+          target.popDrain(RTSGBL.attRatio*dpop, this.owner);
         }
-        this.pop -= dpop;
+        this.popDrain(dpop);
         break;
       case RTSNode.RECEDING:
         var ddist = -dt*RTSGBL.speed;
@@ -103,6 +115,34 @@ RTSNode.prototype.step = function(dt, nodes) {
           continue;
         }
         break;
+      case RTSNode.WIZARD:
+        var dist = attack.dist;
+        var tgtAttacks = target.attacks;
+        var tgtAttack = _.find(tgtAttacks, _.matchesProperty('id', this.id));
+        //push forward if the enemy chickens out
+        if(tgtAttack.mode !== RTSNode.WIZARD) {
+          attack.mode = RTSNode.ATTACKING;
+          break;
+        }
+        var tgtDist = tgtAttack.dist;
+        if(tgtDist > dist) break; //let the one with the larger dist be responsible for both
+        var realDist = this.dist(target);
+        //gradually brings it towards the center
+        var speed = RTSGBL.speed*(1-2*dist/realDist);
+        attack.dist += dt*speed;
+        tgtAttack.dist -= dt*speed;
+        
+        
+        //add to how long they've been in wizard mode
+        this.wizDur += dt*2;
+        target.wizDur += dt*2;
+        //give up if they can't afford wizardry
+        var wizCost = dt*(RTSGBL.speed*RTSGBL.attCost + this.wizDur*RTSGBL.wizCoef);
+        [[this, attack], [target, tgtAttack]].forEach(function(arr) {
+          if(arr[0].popDrain(wizCost) < RTSGBL.attPop) {
+              arr[1].mode = RTSNode.RECEDING;
+          }
+        });
     }
   }
 };
@@ -111,6 +151,16 @@ RTSNode.prototype.dist = function(node) {
   var dx = this.x-node.x;
   var dy = this.y-node.y;
   return Math.sqrt(dx*dx+dy*dy)-this.size-node.size;
+};
+
+RTSNode.prototype.popDrain = function(amt, source) {
+  this.pop -= amt;
+  if(this.pop < 0) {
+    if(this.owner === source) this.pop = 0;
+    else this.pop = -this.pop;
+    this.owner = source;
+  }
+  return this.pop;
 };
 
 RTSNode.prototype.getGrowth = function() {

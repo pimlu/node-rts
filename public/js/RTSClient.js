@@ -1,11 +1,15 @@
 function drawCircle(shape, color, rad) {
   shape.graphics.beginFill(color).drawCircle(0, 0, rad);
 }
-var shiftDown = false, zDown = false;
+var shiftDown = false, zDown = false, xDown = false;
 $(document).on('keyup keydown', function(e){
   shiftDown = e.shiftKey;
-  if(String.fromCharCode(e.keyCode) === 'Z') {
+  var key = String.fromCharCode(e.keyCode);
+  if(key === 'Z') {
     zDown = e.type === 'keydown';
+  }
+  if(key === 'X') {
+    xDown = e.type === 'keydown';
   }
 });
 
@@ -113,7 +117,7 @@ RTSClient.prototype.tick = function(event) {
   
   this.stats.begin();
   
-  this.game.step(event.delta / 1000);
+  this.game.step(Math.min(event.delta / 1000, 1/30));
   
   var nodes = this.game.nodes;
   
