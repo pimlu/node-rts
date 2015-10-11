@@ -1,3 +1,4 @@
+var ld = typeof _ === 'undefined' ? require('lodash') : _;
 
 function RTSNode(id, x, y, size, owner) {
   this.id = id;
@@ -51,7 +52,7 @@ RTSNode.prototype.canAttack = function(node) {
 };
 
 RTSNode.prototype.getAttackFor = function(id) {
-  return _.find(this.attacks, _.matchesProperty('id', id));
+  return ld.find(this.attacks, ld.matchesProperty('id', id));
 };
 
 RTSNode.prototype.takePop = function(pop, owner) {

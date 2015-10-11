@@ -1,4 +1,4 @@
-var PQ;
+var PQ, ld = typeof _ === 'undefined' ? require('lodash') : _;;
 //has game state, no rendering
 function RTSGame() {
   this.nodes = [];
@@ -150,7 +150,7 @@ RTSGame.prototype.doEvent = function(event) {
       event.src.forEach(function(index) {
         var node = nodes[index];
         if(!node || !RTSGBL.debug && event.source !== node.owner) return; //for security purposes
-        if(!node.debug(event.dst)) return;
+        if(!node.canAttack(event.dst)) return;
         nodes[index].attack(event.dst);
       });
       break;
@@ -160,9 +160,7 @@ RTSGame.prototype.doEvent = function(event) {
         if(!node || !RTSGBL.debug &&  event.source !== node.owner) return;
         var target = nodes[event.dst[i]];
         //find the matching attack
-        var attack = node.attacks.find(
-          _.matchesProperty('id', target.id)
-        );
+        var attack = ld.find(node.attacks, ld.matchesProperty('id', target.id));
         if(!attack) return;
         if(attack.mode === RTSNode.HITTING) {
           var cutDist = event.us[i]*node.dist(target);

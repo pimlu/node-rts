@@ -189,7 +189,7 @@ RTSClient.prototype.stageUp = function(event) {
       }
     }
     if(src.length) {
-      this.game.queueEvent('CUT', this.game.team, {
+      this.sendEvent('CUT', {
         src: src,
         dst: dst,
         us: us
@@ -201,7 +201,7 @@ RTSClient.prototype.stageUp = function(event) {
 RTSClient.prototype.sendEvent = function(name, data) {
   this.game.queueEvent(name, this.game.team, data);
   if(this.ws) {
-    this.ws.send({
+    send(this.ws, {
       type: UPDATE,
       name: name,
       data: data
@@ -327,7 +327,7 @@ RTSClient.prototype.clickCircle = function(index) {
       return nodes[v].canAttack(index);
     });
     if(attackers.length) { //comands nodes to attack
-      this.game.queueEvent('ATTACK', this.game.team, {
+      this.sendEvent('ATTACK', {
         src: attackers,
         dst: index
       });

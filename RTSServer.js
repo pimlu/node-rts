@@ -91,10 +91,12 @@ function RTSServer(server) {
           t: +new Date(),
           state: getRoom().game.exportState()
         });
+      } else if(data.type === UPDATE) {
+        var source = getPnum();
+        getRoom().game.queueEvent(data.name, source, data.data);
       }
       
-      
-      console.log('received: %s', msg);
+      //console.log('received: %s', msg);
     });
     
     function startRoom() {
