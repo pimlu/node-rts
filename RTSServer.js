@@ -1,5 +1,6 @@
 var url = require('url');
 var WebSocketServer = require('ws').Server;
+var NanoTimer = require('nanotimer');
 var _ = require('lodash');
 
 function encode(data) {
@@ -14,6 +15,8 @@ function decode(data) {
     return {};
   }
 }
+
+
 
 function RTSServer(server) {
   var self = this;
@@ -35,15 +38,35 @@ function RTSServer(server) {
       return getRoom().players.indexOf(ws)+1;
     }
     
-    function send(data) {
+    function send(ws, data) {
       ws.send(encode(data));
     }
+    //if data is a function, we evaluate it and send it only if at least one player has an empty buffer
+    function broadcast(data) {
+      var computed;
+      if(typeof data !== 'function') computed = data;
+      getRoom().players.forEach(function(ws) {
+        if(computed === void 0) {
+          if(ws.bufferedAmount > 128) return;
+          computed = data();
+        }
+        send(ws, computed);
+      });
+    }
+    var timer = new NanoTimer();
+    var last = [0,0];
+    
+    function timeDiff() {
+      var diff = process.hrtime(last);
+      last = process.hrtime();
+      return diff[0]+diff[1]/1e9;
+    };
     
     ws.on('message', function incoming(msg) {
       var data = decode(msg);
       //time sync
       if(data.type === TIME) {
-        send({type: TIME, t:+new Date()});
+        send(ws, {type: TIME, t:+new Date()});
         return;
       } else if(data.type === STATUS) {
         roomNum = 0; //TODO placeholder
@@ -56,18 +79,40 @@ function RTSServer(server) {
           room.start = +new Date() + 3000;
           setTimeout(startRoom.bind(self), 3000);
         }
-        send({
+        send(ws, {
           type: STATUS,
           pnum: getPnum(),
           players: players.length,
           needed: room.needed,
           start: room.start
         });
+        broadcast({
+          type: UPDATE,
+          state: getRoom().game.exportState()
+        });
       }
       
       
       console.log('received: %s', msg);
     });
+    
+    function startRoom() {
+      console.log('startRoom %s', roomNum);
+      timeDiff();
+      timer.setInterval(update, '', 1/60+'s');
+    }
+    
+    function update() {
+      var d;
+      getRoom().game.step(d=timeDiff());
+      console.log('d = %s',d);
+      broadcast(function() {
+        return {
+          type: UPDATE,
+          state: getRoom().game.exportState()
+        };
+      });
+    }
     
     ws.on('close', function close(e) {
       console.log('close', e);
@@ -80,15 +125,12 @@ function RTSServer(server) {
       }
     });
     
-    function startRoom(roomNum) {
-      console.log('startRoom %s', roomNum);
-    }
     
   });
 }
 
 RTSServer.prototype.addRoom = function(name) {
-  this.rooms[this.roomNum++] = {
+  var room = this.rooms[this.roomNum++] = {
     name: name,
     players: [],
     needed: 2,
@@ -96,6 +138,7 @@ RTSServer.prototype.addRoom = function(name) {
     start: null,
     game: new RTSGame()
   };
+  room.game.init(10, 600);
 };
 
 module.exports = RTSServer;

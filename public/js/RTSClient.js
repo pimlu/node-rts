@@ -99,7 +99,7 @@ RTSClient.prototype.onMessage = function(e) {
   var self = this;
   
   var data = decode(e.data);
-  log.debug('Server: ' + e.data);
+  //log.debug('Server: ' + e.data);
   if(this.netState === RTSClient.WAITING && data.type === STATUS) {
     this.game.team = data.pnum;
     var summary = data.players+'/'+data.needed+' players. you are '+
