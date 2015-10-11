@@ -55,9 +55,19 @@ function RTSClient(div, url, gameId) {
   
   this.selected = [];
   
+  
+
+  
   //networking code
   //if url is falsy, we do "single player" (lol)
   if(this.url = url) {
+    this.roomNum = window.location.hash;
+    if(!this.roomNum) {
+      this.roomNum = '#' + (Math.random() * 1e9 | 0);
+      history.pushState(null, null, this.roomNum);
+    }
+    this.roomNum = +this.roomNum.substr(1);
+    
     this.ws = new WebSocket(url);
     this.netState = RTSClient.CONNECTING;
     this.ws.onopen = this.onOpen.bind(this);
@@ -88,7 +98,8 @@ RTSClient.prototype.onSync = function(delta, latency) {
 };
 RTSClient.prototype.getStatus = function() {
   send(this.ws, {
-    type: STATUS
+    type: STATUS,
+    roomNum: this.roomNum
   });
 };
 RTSClient.prototype.onError = function(error) {
@@ -113,7 +124,8 @@ RTSClient.prototype.onMessage = function(e) {
     
     to(function() {
       send(self.ws, {
-        type: STATUS
+        type: STATUS,
+        roomNum: self.roomNum
       });
     }, 500);
     
@@ -208,11 +220,18 @@ RTSClient.prototype.sendEvent = function(name, data) {
     });
   }
 }
+var lastx;
 RTSClient.prototype.tick = function(event) {
   this.stats.begin();
   
   if(this.netState === RTSClient.PLAYING) this.game.step(Math.min(event.delta / 1000, 1/30));
   this.update(event);
+  
+  var x =this.game.nodes[0] && this.game.nodes[0].x;
+  if(lastx !== x) {
+    console.log(lastx, x);
+  }
+  lastx = x;
   
   this.stats.end();
 };

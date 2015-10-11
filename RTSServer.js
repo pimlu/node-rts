@@ -15,7 +15,33 @@ function decode(data) {
     return {};
   }
 }
+//https://gist.github.com/manast/1185904
+function interval(duration, fn){
+  this.baseline = undefined
+  
+  this.run = function(){
+    if(this.baseline === undefined){
+      this.baseline = new Date().getTime()
+    }
+    fn()
+    var end = new Date().getTime()
+    this.baseline += duration
+ 
+    var nextTick = duration - (end - this.baseline)
+    if(nextTick<0){
+      nextTick = 0
+    }
+    (function(i){
+        i.timer = setTimeout(function(){
+        i.run(end)
+      }, nextTick)
+    }(this))
+  }
 
+  this.stop = function(){
+    clearTimeout(this.timer)
+  }
+}
 
 
 function RTSServer(server) {
@@ -53,7 +79,6 @@ function RTSServer(server) {
         send(ws, computed);
       });
     }
-    var timer = new NanoTimer();
     var last = [0,0];
     
     function timeDiff() {
@@ -69,12 +94,16 @@ function RTSServer(server) {
         send(ws, {type: TIME, t:+new Date()});
         return;
       } else if(data.type === STATUS) {
-        roomNum = 0; //TODO placeholder
+        //create a room if it doesn't exist
+        roomNum = data.roomNum;
         var room = getRoom();
+        if(!room) room = self.addRoom(roomNum);
         var players = room.players;
         if(players.indexOf(ws) === -1) {
           players.push(ws);
+          room.pcount++;
         }
+        //start the countdown
         if(players.length === room.needed && !room.start) {
           room.start = +new Date() + 3000;
           setTimeout(startRoom.bind(self), 3000);
@@ -101,47 +130,65 @@ function RTSServer(server) {
     
     function startRoom() {
       console.log('startRoom %s', roomNum);
+      var room = getRoom();
       timeDiff();
-      timer.setInterval(update, '', 1/60+'s');
+      if(!room) return;
+      room.timer && room.timer.stop();
+      room.timer = new interval(1000/60, update);
+      room.timer.run();
     }
     
     function update() {
       var d;
-      getRoom().game.step(d=timeDiff());
+      var room = getRoom();
+      if(!room) {
+        console.log('no room');
+        return;
+      }
+      room.game.step(d=timeDiff());
       broadcast(function() {
         return {
           type: UPDATE,
           t: +new Date(),
-          state: getRoom().game.exportState()
+          state: room.game.exportState()
         };
       });
     }
     
     ws.on('close', function close(e) {
-      console.log('close', e);
+      console.log('close %s', e);
       if(roomNum === void 0) return;
       var room = getRoom();
       var players = getRoom().players;
+      room.pcount--;
       //if it hasn't started, let others fill in
       if(!room.playing) {
         _.remove(players, _.matches(ws));
       }
+      if(!room.pcount) {
+        console.log('removeRoom %s', roomNum);
+        room.timer && room.timer.stop();
+        delete self.rooms[roomNum];
+      }
+      
     });
     
     
   });
 }
 
-RTSServer.prototype.addRoom = function(name) {
-  var room = this.rooms[this.roomNum++] = {
-    name: name,
+RTSServer.prototype.addRoom = function(id) {
+  console.log('addRoom %s', id);
+  var room = this.rooms[id] = {
     players: [],
+    pcount: 0,
     needed: 2,
     playing: false,
     start: null,
     game: new RTSGame()
   };
   room.game.init(10, 600);
+  return room;
 };
 
 module.exports = RTSServer;
