@@ -31,7 +31,6 @@ RTSNode.prototype.attack = function(id) {
   this.attacks.push({
     id: id,
     owner: this.owner,
-    time: RTSGBL.now()+RTSGBL.delay,
     dist: 0,
     mode: RTSNode.ATTACKING
   });
@@ -41,7 +40,6 @@ RTSNode.prototype.slack = function(node, size) {
   this.attacks.push({
     id: node.id,
     owner: node.owner,
-    time: RTSGBL.now()+RTSGBL.delay,
     dist: size,
     mode: RTSNode.RECEDING
   });

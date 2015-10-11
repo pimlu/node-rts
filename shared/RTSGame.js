@@ -51,6 +51,40 @@ RTSGame.prototype.step = function(dt) {
 RTSGame.prototype.loadState = function(state) {
   
 };
+RTSGame.prototype.exportState = function() {
+  var output = {
+    nodexs: [],
+    nodeys: [],
+    nodesizes: [],
+    nodepops: [],
+    nodeowners: [],
+    nodewizdurs: [],
+    attacks: [],
+    msgs: []
+  };
+  var nodes = this.nodes;
+  for(var i=0; i<nodes.length; i++) {
+    var node = nodes[i];
+    output.nodexs.push(node.x);
+    output.nodeys.push(node.y);
+    output.nodesizes.push(node.size);
+    output.nodeowners.push(node.owner);
+    output.nodewizdurs.push(node.wizDur);
+    output.attacks.push(node.attacks.map(function(a) {
+      return [a.id, a.owner, a.dist, a.mode];
+    }));
+  }
+  //FIXME find a better way to read whole priority queue
+  var msgs = [];
+  while(this.queue.length) msgs.push(this.queue.dequeue());
+  for(var i=0; i<msgs.length; i++) this.queue.queue(msgs[i]);
+  output.msgs = msgs.map(function(m) {
+    var msg = [m.type, m.source, m.time, m.src, m.dst];
+    if(m.us) msg.push(m.us);
+    return msg;
+  });
+  return output;
+};
 
 RTSGame.prototype.queueEvent = function(type, source, e, manualTime) {
   e.type = RTSGame[type];
