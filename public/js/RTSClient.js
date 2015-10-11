@@ -217,7 +217,8 @@ RTSClient.prototype.clickCircle = function(index) {
     this.selected = new Array(this.game.nodes.length);
   }
   //selects nodes to command (shift selects multiple)
-  if(!zDown && nodes[index].owner === this.team) {
+  //when debugging, the x key overrides
+  if((RTSGBL.debug && xDown) || !zDown && nodes[index].owner === this.team) {
     this.selected[index] = !oldSelected[index];
   } else {
     //maps oldSelected to a list of the truthy values in it
@@ -225,13 +226,13 @@ RTSClient.prototype.clickCircle = function(index) {
         return {v:v,i:i};
       }), _.matchesProperty('v', true))
       .map(_.property('i'));
-    //just the nodes with the energy to attack
-    var canAttack = selectedList.filter(function(v) {
-      return nodes[v].pop >= RTSGBL.attPop;
+    //just the nodes with the ability to attack
+    var attackers = selectedList.filter(function(v) {
+      return nodes[v].debug(index);
     });
-    if(canAttack.length) { //comands nodes to attack
+    if(attackers.length) { //comands nodes to attack
       this.game.queueEvent('ATTACK', this.team, {
-        src: canAttack,
+        src: attackers,
         dst: index
       });
     }

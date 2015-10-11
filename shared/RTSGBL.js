@@ -1,6 +1,7 @@
 
 var RTSGBL = {
   isNode: typeof window === 'undefined',
+  debug: true,
   //player colors for each team
   pColors: ['lightgrey', 'red', 'blue'],
   //pixels per second for attacks
@@ -12,7 +13,7 @@ var RTSGBL = {
   //same thing, but for receding slack
   slackRatio: 1.5,
   //cost in pop/s to maintain attack
-  attSpeed: 8,
+  attSpeed: 12,
   //network sync delay in seconds
   delay: 0.2,
   //interpolation time on client

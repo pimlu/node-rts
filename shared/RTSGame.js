@@ -66,14 +66,15 @@ RTSGame.prototype.doEvent = function(event) {
     case RTSGame.ATTACK:
       event.src.forEach(function(index) {
         var node = nodes[index];
-        if(!node || event.source !== node.owner) return; //for security purposes
+        if(!node || !RTSGBL.debug && event.source !== node.owner) return; //for security purposes
+        if(!node.debug(event.dst)) return;
         nodes[index].attack(event.dst);
       });
       break;
     case RTSGame.CUT:
       event.src.forEach(function(index, i) {
         var node = nodes[index];
-        if(!node || event.source !== node.owner) return;
+        if(!node || !RTSGBL.debug &&  event.source !== node.owner) return;
         var target = nodes[event.dst[i]];
         //find the matching attack
         var attack = node.attacks.find(

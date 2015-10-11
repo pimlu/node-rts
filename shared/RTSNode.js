@@ -20,9 +20,7 @@ RTSNode.prototype.attack = function(id) {
   //don't attack if you can't afford it
   if(this.pop < 5) return;
   //don't attack if you are already
-  //FIXME: node gets conquered, still receding with what is now enemy units
-  //should cut at 0 if not receding already
-  var existing = _.find(this.attacks, _.matchesProperty('id', id));
+  var existing = this.getAttackFor(id);
   if(existing) {
     if(existing.mode === RTSNode.RECEDING) {
       existing.mode = RTSNode.ATTACKING;
@@ -47,6 +45,15 @@ RTSNode.prototype.slack = function(node, size) {
     dist: size,
     mode: RTSNode.RECEDING
   });
+};
+
+RTSNode.prototype.debug = function(node) {
+  var attack = this.getAttackFor(node.id);
+  return this.pop >= RTSGBL.attPop && (!attack || attack.owner === this.owner);
+};
+
+RTSNode.prototype.getAttackFor = function(id) {
+  return _.find(this.attacks, _.matchesProperty('id', id));
 };
 
 RTSNode.prototype.takePop = function(pop, owner) {
@@ -80,8 +87,8 @@ RTSNode.prototype.step = function(dt, nodes) {
         var realDist = this.dist(target);
         
         //if we're about to collide with another beam head-on, react
-        var tgtAttacks = target.attacks;
-        var tgtAttack = _.find(tgtAttacks, _.matchesProperty('id', this.id));
+        //var tgtAttacks = target.attacks;
+        var tgtAttack = target.getAttackFor(this.id);
         if(tgtAttack && attack.dist + tgtAttack.dist > realDist) {
           //if they're friendly, recede
           if(attack.owner === tgtAttack.owner) {
@@ -141,8 +148,8 @@ RTSNode.prototype.step = function(dt, nodes) {
         break;
       case RTSNode.WIZARD:
         var dist = attack.dist;
-        var tgtAttacks = target.attacks;
-        var tgtAttack = _.find(tgtAttacks, _.matchesProperty('id', this.id));
+        //var tgtAttacks = target.attacks;
+        var tgtAttack = target.getAttackFor(this.id);
         //push forward if the enemy chickens out
         if(tgtAttack.mode !== RTSNode.WIZARD) {
           attack.mode = RTSNode.ATTACKING;
