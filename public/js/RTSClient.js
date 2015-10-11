@@ -60,11 +60,10 @@ RTSClient.prototype.tick = function(event) {
       var cont = new createjs.Container();
       this.nodeConts.addChild(cont);
       //add the shapes of the container
-      var size = new createjs.Shape();
-      cont.addChild(size);
-      var pop = new createjs.Shape();
-      //pop changes each frame
-      cont.addChild(pop);
+      cont.addChild(new createjs.Shape()); //size
+      cont.addChild(new createjs.Shape()); //pop
+      //add the attacks
+      cont.addChild(new createjs.Container());
       
       //listen for clicks
       cont.addEventListener('click', this.clickCircle.bind(this, i));
@@ -78,13 +77,42 @@ RTSClient.prototype.tick = function(event) {
     nodeCont.y = node.y;
     var size = nodeCont.children[0];
     var pop = nodeCont.children[1];
-    var color = ['lightgrey', 'red', 'blue'][node.owner];
+    var attackCont = nodeCont.children[2];
+    var playerColor = ['lightgrey', 'red', 'blue'][node.owner];
     
     size.graphics.clear();
     if(this.selected[i]) size.graphics.setStrokeStyle(2).beginStroke('black')
     drawCircle(size, 'grey', node.size);
     pop.graphics.clear();
-    drawCircle(pop, color, node.size*Math.sqrt(node.pop/node.maxPop));
+    drawCircle(pop, playerColor, node.size*Math.sqrt(node.pop/node.maxPop));
+    
+    //draw each attack line
+    attackCont.removeAllChildren();
+    var lines = new createjs.Shape();
+    lines.graphics.setStrokeStyle(3).beginStroke(playerColor);
+    attackCont.addChild(lines);
+    
+    
+    //for each attack, draw a line starting at the edge of the attacker circle
+    //moving out dist pixels directly towards the target
+    for(var j=0; j<node.attacks.length; j++) {
+      var attack = node.attacks[j];
+      
+      var target = nodes[attack.id];
+      
+      var dx = target.x - node.x;
+      var dy = target.y - node.y;
+      var fullDist = Math.sqrt(dx*dx + dy*dy);
+      
+      var nodeRatio = node.size/fullDist;
+      var tgtRatio = attack.dist/fullDist;
+      
+      var mtDx = dx*nodeRatio, mtDy = dy*nodeRatio;
+      
+      lines.graphics.moveTo(mtDx, mtDy)
+        .lineTo(mtDx + dx*tgtRatio, mtDy + dy*tgtRatio);
+      
+    }
   }
   this.stage.update(event);
   

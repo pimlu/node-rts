@@ -39,7 +39,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         var origDist = attack.dist;
         //if we can't afford any more of this, recede
         if(this.pop - RTSGBL.attCost*ddist < 5) {//TODO placeholder
-          attack.mode = RECEDING;
+          attack.mode = RTSNode.RECEDING;
           i--; continue; //do this one over again, except receding
         }
         
@@ -52,6 +52,21 @@ RTSNode.prototype.step = function(dt, nodes) {
         }
         //now pay the population price
         this.pop -= RTSGBL.attCost*(attack.dist - origDist);
+        break;
+      case RTSNode.RECEDING:
+        var ddist = -dt*RTSGBL.speed;
+        var origDist = attack.dist;
+        //in RECEDING, move backward; if you've made it, remove self
+        attack.dist += ddist;
+        if(attack.dist <= 0) attack.dist = 0;
+        
+        this.pop -= RTSGBL.attCost*(attack.dist - origDist);
+        
+        if(attack.dist === 0) {
+          //remove self from attacks, continue
+          attacks.splice(i--, 1);
+          continue;
+        }
         break;
     }
   }
