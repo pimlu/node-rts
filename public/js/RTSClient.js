@@ -13,7 +13,7 @@ $(document).on('keyup keydown', function(e){
   }
 });
 
-function RTSClient(div, gameId) {
+function RTSClient(div, url, gameId) {
   var stats = this.stats = new Stats();
   stats.setMode( 0 ); // 0: fps, 1: ms, 2: mb
 
@@ -55,11 +55,42 @@ function RTSClient(div, gameId) {
   this.selected = [];
   this.team = -1;
   
+  //networking code
+  //if url is falsy, we do "single player" (lol)
+  if(url) {
+    this.ws = new WebSocket(url);
+    this.netState = RTSClient.CONNECTING;
+    this.ws.onopen = this.onOpen.bind(this);
+  } else {
+    this.netState = RTSClient.PLAYING;
+  }
+  
   //RAF on our tick function
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
 	createjs.Ticker.addEventListener("tick", this.tick.bind(this));
   
 }
+
+'CONNECTING,SYNCING,WAITING,PLAYING'.split(',').forEach(function(v,i) {
+  RTSClient[v] = i;
+});
+
+RTSClient.prototype.onOpen = function() {
+  this.netState = RTSClient.SYNCING;
+  syncClient(this.ws, this.onSync.bind(this));
+};
+RTSClient.prototype.onSync = function(delta, latency) {
+  this.netState = RTSClient.WAITING;
+  log.debug(delta, latency);
+  this.ws.onerror = this.onError.bind(this);
+  this.ws.onmessage = this.onMessage.bind(this);
+};
+RTSClient.prototype.onError = function(error) {
+  log.error('WebSocket Error ' + error);
+};
+RTSClient.prototype.onMessage = function(e) {
+  log.debug('Server: ' + e.data);
+};
 
 
 RTSClient.prototype.stageDown = function(event) {
@@ -114,10 +145,15 @@ RTSClient.prototype.stageUp = function(event) {
   }
   this.dragState = null;
 };
-
 RTSClient.prototype.tick = function(event) {
-  
   this.stats.begin();
+  
+  if(this.netState === RTSClient.PLAYING) this.update(event);
+  
+  this.stats.end();
+};
+RTSClient.prototype.update = function(event) {
+  
   
   this.game.step(Math.min(event.delta / 1000, 1/30));
   
@@ -206,7 +242,6 @@ RTSClient.prototype.tick = function(event) {
   
   this.stage.update(event);
   
-  this.stats.end();
 };
 
 RTSClient.prototype.clickCircle = function(index) {

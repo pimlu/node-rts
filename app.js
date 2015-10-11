@@ -1,6 +1,8 @@
+var server = require('http').createServer();
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieSession = require('cookie-session');
+var port = 8080;
 
 //I know these globals are bad practice, but there will be few and I may refactor later
 ['RTSGBL','RTSGame','RTSNode'].forEach(function(name) {
@@ -21,7 +23,11 @@ app.use(cookieSession({
 
 require('./routes.js')(app);
 
-var server = app.listen(8080, function() {
+server.on('request', app);
+
+var rtsServer = new require('./RTSServer.js')(server);
+
+server.listen(port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
