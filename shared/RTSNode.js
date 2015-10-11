@@ -20,6 +20,8 @@ RTSNode.prototype.attack = function(id) {
   //don't attack if you can't afford it
   if(this.pop < 5) return;
   //don't attack if you are already
+  //FIXME: node gets conquered, still receding with what is now enemy units
+  //should cut at 0 if not receding already
   var existing = _.find(this.attacks, _.matchesProperty('id', id));
   if(existing) {
     if(existing.mode === RTSNode.RECEDING) {
@@ -46,7 +48,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         var ddist = dt*RTSGBL.speed;
         var origDist = attack.dist;
         //if we can't afford any more of this, recede
-        if(this.pop - RTSGBL.attCost*ddist < 5) {//TODO placeholder
+        if(this.pop - RTSGBL.attCost*ddist < RTSGBL.attPop) {
           attack.mode = RTSNode.RECEDING;
           i--; continue; //do this one over again, except receding
         }
@@ -60,6 +62,31 @@ RTSNode.prototype.step = function(dt, nodes) {
         }
         //now pay the population price
         this.pop -= RTSGBL.attCost*(attack.dist - origDist);
+        break;
+      case RTSNode.HITTING:
+        //if we can't afford any more of this, recede
+        if(this.pop < RTSGBL.hitPop) {
+          attack.mode = RTSNode.RECEDING;
+          i--; continue; //do this one over again, except receding
+        }
+        var target = nodes[attack.id];
+        var dpop = RTSGBL.attSpeed*dt;
+        //supply troops, or attack, based on ownership
+        if(target.owner === this.owner) {
+          //recede if full (don't waste)
+          if(target.pop >= target.maxPop) {
+            attack.mode = RTSNode.RECEDING;
+            i--; continue; //do this one over again, except receding
+          }
+          target.pop += dpop;
+        } else {
+          target.pop -= RTSGBL.attRatio*dpop;
+          if(target.pop < 0) {
+            target.owner = this.owner;
+            target.pop = dpop;
+          }
+        }
+        this.pop -= dpop;
         break;
       case RTSNode.RECEDING:
         var ddist = -dt*RTSGBL.speed;

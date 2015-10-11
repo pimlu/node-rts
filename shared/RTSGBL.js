@@ -13,6 +13,10 @@ var RTSGBL = {
   delay: 0.2,
   //interpolation time on client
   interp: 0.1,
+  //min pop to attack
+  attPop: 5,
+  //min pop to hit
+  hitPop: 2,
   now: function() {
     //TODO time sync?
     return +new Date();

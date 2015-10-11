@@ -84,7 +84,8 @@ RTSClient.prototype.tick = function(event) {
     if(this.selected[i]) size.graphics.setStrokeStyle(2).beginStroke('black')
     drawCircle(size, 'grey', node.size);
     pop.graphics.clear();
-    drawCircle(pop, playerColor, node.size*Math.sqrt(node.pop/node.maxPop));
+    var popRatio = node.pop/node.maxPop;
+    drawCircle(pop, playerColor, node.size*popRatio);
     
     //draw each attack line
     attackCont.removeAllChildren();
@@ -137,7 +138,7 @@ RTSClient.prototype.clickCircle = function(index) {
       .map(_.property('i'));
     //just the nodes with the energy to attack
     var canAttack = selectedList.filter(function(v) {
-      return nodes[v].pop >= 5;
+      return nodes[v].pop >= RTSGBL.attPop;
     });
     if(canAttack.length) { //comands nodes to attack
       this.game.queueEvent('ATTACK', {
