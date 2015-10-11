@@ -150,7 +150,7 @@ RTSClient.prototype.tick = function(event) {
     var size = nodeCont.children[0];
     var pop = nodeCont.children[1];
     var attackCont = nodeCont.children[2];
-    var playerColor = ['lightgrey', 'red', 'blue'][node.owner];
+    var playerColor = RTSGBL.pColors[node.owner];
     
     size.graphics.clear();
     if(this.selected[i]) size.graphics.setStrokeStyle(2).beginStroke('black')
@@ -162,7 +162,6 @@ RTSClient.prototype.tick = function(event) {
     //draw each attack line
     attackCont.removeAllChildren();
     var lines = new createjs.Shape();
-    lines.graphics.setStrokeStyle(3).beginStroke(playerColor);
     attackCont.addChild(lines);
     
     attackCont._data = [];
@@ -182,6 +181,7 @@ RTSClient.prototype.tick = function(event) {
       
       var mtDx = dx*nodeRatio, mtDy = dy*nodeRatio;
       var ltDx = mtDx + dx*tgtRatio, ltDy = mtDy + dy*tgtRatio;
+      lines.graphics.setStrokeStyle(3).beginStroke(RTSGBL.pColors[attack.owner]);
       lines.graphics.moveTo(mtDx, mtDy)
         .lineTo(ltDx, ltDy);
       attackCont._data.push({

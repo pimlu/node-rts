@@ -7,7 +7,6 @@ function RTSNode(id, x, y, size, owner) {
   this.pop = this.maxPop * (owner ? 1/4 : Math.random());
   this.owner = owner;
   this.attacks = [];
-  this.incoming = [];
   this.wizDur = 0;
 }
 if(RTSGBL.isNode) global.RTSNode = RTSNode;
@@ -40,8 +39,23 @@ RTSNode.prototype.attack = function(id) {
   });
 };
 
-RTSNode.prototype.slack = function(id, size) {
-  //FIXME
+RTSNode.prototype.slack = function(node, size) {
+  this.attacks.push({
+    id: node.id,
+    owner: node.owner,
+    time: RTSGBL.now()+RTSGBL.delay,
+    dist: size,
+    mode: RTSNode.RECEDING
+  });
+};
+
+RTSNode.prototype.takePop = function(pop, owner) {
+  owner = owner || this.owner;
+  if(owner === this.owner) {
+    this.popDrain(-pop);
+  } else {
+    this.popDrain(pop, owner);
+  }
 };
 
 RTSNode.prototype.step = function(dt, nodes) {
@@ -99,9 +113,9 @@ RTSNode.prototype.step = function(dt, nodes) {
             attack.mode = RTSNode.RECEDING;
             break;
           }
-          target.pop += dpop;
+          target.takePop(dpop);
         } else {
-          target.popDrain(RTSGBL.attRatio*dpop, attack.owner);
+          target.takePop(RTSGBL.attRatio*dpop, attack.owner);
         }
         this.popDrain(dpop);
         break;
@@ -112,11 +126,11 @@ RTSNode.prototype.step = function(dt, nodes) {
         attack.dist += ddist;
         if(attack.dist <= 0) attack.dist = 0;
         
-        var amount = RTSGBL.attCost*(attack.dist - origDist);
+        var amount = RTSGBL.attCost*(origDist - attack.dist);
         
         //TODO slack attack ratio
-        amount *= (attack.owner === this.owner ? 1 : -1);
-        this.popDrain(amount, attack.owner);
+        amount *= (attack.owner === this.owner ? 1 : RTSGBL.slackRatio);
+        this.takePop(amount, attack.owner);
         
         
         if(attack.dist === 0) {
@@ -147,7 +161,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         this.wizDur += dt*2;
         target.wizDur += dt*2;
         //give up if they can't afford wizardry
-        var wizCost = dt*(RTSGBL.speed*RTSGBL.attCost + this.wizDur*RTSGBL.wizCoef);
+        var wizCost = dt*(RTSGBL.speed*RTSGBL.attCost/2 + this.wizDur*RTSGBL.wizCoef);
         [[this, attack], [target, tgtAttack]].forEach(function(arr) {
           if(arr[0].popDrain(wizCost) < RTSGBL.attPop) {
               arr[1].mode = RTSNode.RECEDING;
@@ -164,7 +178,7 @@ RTSNode.prototype.dist = function(node) {
 };
 
 RTSNode.prototype.popDrain = function(amt, source) {
-  if(source === void 0) source = this.id;
+  if(source === void 0) source = this.owner;
   this.pop -= amt;
   if(this.pop < 0) {
     if(this.owner === source) this.pop = 0;
@@ -175,7 +189,7 @@ RTSNode.prototype.popDrain = function(amt, source) {
 };
 
 RTSNode.prototype.getGrowth = function() {
-  return this.size/10+this.pop/15;
+  return this.size/7+this.pop/15;
 };
 
 RTSNode.prototype.getMaxPop = function() {

@@ -1,12 +1,16 @@
 
 var RTSGBL = {
   isNode: typeof window === 'undefined',
+  //player colors for each team
+  pColors: ['lightgrey', 'red', 'blue'],
   //pixels per second for attacks
-  speed: 50,
+  speed: 100,
   //cost in pop per px of attack distance
-  attCost: 0.2,
+  attCost: 0.3,
   //ratio of defender to attacker's losses when attacker directly hits node
   attRatio: 2,
+  //same thing, but for receding slack
+  slackRatio: 1.5,
   //cost in pop/s to maintain attack
   attSpeed: 8,
   //network sync delay in seconds

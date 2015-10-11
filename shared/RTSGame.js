@@ -84,7 +84,7 @@ RTSGame.prototype.doEvent = function(event) {
           var cutDist = event.us[i]*node.dist(target);
           var slack = attack.dist - cutDist;
           attack.dist = cutDist;
-          target.slack(node.id, slack);
+          target.slack(node, slack);
         }
         attack.mode = RTSNode.RECEDING;
       });
