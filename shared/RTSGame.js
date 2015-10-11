@@ -1,7 +1,7 @@
 var PQ;
 //has game state, no rendering
 function RTSGame() {
-  this.nodes = null;
+  this.nodes = [];
   this.queue = new PQ({
     comparator: function(a, b) {
       return a.time - b.time;

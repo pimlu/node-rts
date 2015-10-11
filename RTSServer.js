@@ -31,6 +31,9 @@ function RTSServer(server) {
     function getRoom() {
       return self.rooms[roomNum];
     }
+    function getPnum() {
+      return getRoom().players.indexOf(ws)+1;
+    }
     
     function send(data) {
       ws.send(encode(data));
@@ -55,6 +58,7 @@ function RTSServer(server) {
         }
         send({
           type: STATUS,
+          pnum: getPnum(),
           players: players.length,
           needed: room.needed,
           start: room.start

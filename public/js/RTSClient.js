@@ -101,7 +101,9 @@ RTSClient.prototype.onMessage = function(e) {
   var data = decode(e.data);
   log.debug('Server: ' + e.data);
   if(this.netState === RTSClient.WAITING && data.type === STATUS) {
-    var summary = data.players+'/'+data.needed+' players. <span></span>'; 
+    this.game.team = data.pnum;
+    var summary = data.players+'/'+data.needed+' players. you are '+
+      RTSGBL.pColors[this.game.team]+'. <span></span>'; 
     this.p.html(summary);
     
     var timeoutId;
@@ -129,7 +131,7 @@ RTSClient.prototype.onMessage = function(e) {
       }, step);
     }
     function finish() {
-      self.p.find('span').html('go!');
+      self.p.html('go! you are '+RTSGBL.pColors[self.game.team]+'!');
     }
   }
 };
@@ -190,14 +192,12 @@ RTSClient.prototype.stageUp = function(event) {
 RTSClient.prototype.tick = function(event) {
   this.stats.begin();
   
-  if(this.netState === RTSClient.PLAYING) this.update(event);
+  if(this.netState === RTSClient.PLAYING) this.game.step(Math.min(event.delta / 1000, 1/30));
+  this.update(event);
   
   this.stats.end();
 };
 RTSClient.prototype.update = function(event) {
-  
-  
-  this.game.step(Math.min(event.delta / 1000, 1/30));
   
   var nodes = this.game.nodes;
   
