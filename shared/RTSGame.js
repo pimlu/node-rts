@@ -21,7 +21,7 @@ RTSGame.prototype.trueTime = function(server_t) {
 },
 //action delayed now
 RTSGame.prototype.actionTime = function() {
-  return this.now()+this.delay*1000;
+  return this.now()+RTSGBL.delay*1000;
 };
 
 if(RTSGBL.isNode) {
@@ -64,8 +64,40 @@ RTSGame.prototype.step = function(dt) {
 };
 
 //loads a state
-RTSGame.prototype.loadState = function(state) {
-  
+RTSGame.prototype.importState = function(s) {
+  this.nodes = [];
+  for(var i=0; i<s.nodexs.length; i++) {
+    var node = new RTSNode(i, s.nodexs[i], s.nodeys[i], s.nodesizes[i], s.nodeowners[i]);
+    node.pop = s.nodepops[i];
+    node.wizDur = s.nodewizdurs[i];
+    var attacks = s.attacks[i];
+    for(var j=0; j<attacks.length; j++) {
+      var a = attacks[j];
+      node.attacks.push({
+        id: a[0],
+        owner: a[1],
+        dist: a[2],
+        mode: a[3]
+      });
+    }
+    this.nodes.push(node);
+  }
+  this.queue = new PQ({
+    comparator: function(a, b) {
+      return a.time - b.time;
+    }
+  });
+  for(var i=0; i<s.msgs.length; i++) {
+    var msg = s.msgs[i];
+    this.queue.queue({
+      type: msg[0],
+      source: msg[1],
+      time: msg[2],
+      src: msg[3],
+      dst: msg[4],
+      us: msg[5]
+    });
+  }
 };
 RTSGame.prototype.exportState = function() {
   var output = {
@@ -84,6 +116,7 @@ RTSGame.prototype.exportState = function() {
     output.nodexs.push(node.x);
     output.nodeys.push(node.y);
     output.nodesizes.push(node.size);
+    output.nodepops.push(node.pop);
     output.nodeowners.push(node.owner);
     output.nodewizdurs.push(node.wizDur);
     output.attacks.push(node.attacks.map(function(a) {
