@@ -113,7 +113,8 @@ RTSClient.prototype.onMessage = function(e) {
   if(this.netState === RTSClient.WAITING && data.type === STATUS) {
     this.game.team = data.pnum;
     var summary = data.players+'/'+data.needed+' players. you are '+
-      RTSGBL.pColors[this.game.team]+'. <span></span>'; 
+      RTSGBL.pColors[this.game.team]+'. '+
+      (data.players<data.needed?'give someone else this URL!':'')+' <span></span>'; 
     this.p.html(summary);
     
     var timeoutId;
