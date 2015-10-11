@@ -5,7 +5,7 @@ function RTSNode(id, x, y, size, owner) {
   this.x = x; this.y = y;
   this.size = size;
   this.maxPop = this.getMaxPop();
-  this.pop = this.maxPop * (owner ? 1/4 : Math.random());
+  this.pop = this.maxPop * (owner ? 3/4 : Math.random());
   this.owner = owner;
   this.attacks = [];
   this.wizDur = 0;
@@ -195,7 +195,8 @@ RTSNode.prototype.popDrain = function(amt, source) {
 };
 
 RTSNode.prototype.getGrowth = function() {
-  return this.size/7+this.pop/15;
+  if(!this.owner) return 0; //don't grow neutrals
+  return this.size/6+this.pop/15;
 };
 
 RTSNode.prototype.getMaxPop = function() {

@@ -18,7 +18,7 @@ RTSGame.prototype.now = function() {
 };
 //converts a server timestamp to our time
 RTSGame.prototype.trueTime = function(server_t) {
-  return server_t + this.delta - this.latency
+  return server_t + this.delta - this.latency;
 },
 //action delayed now
 RTSGame.prototype.actionTime = function() {
@@ -38,7 +38,7 @@ if(RTSGBL.isNode) {
 
 
 RTSGame.prototype.init = function(nodeCount, size) {
-  this.nodes = [];
+  var nodes = this.nodes = [];
   
   for(var i=0; i<nodeCount; i++) {
     this.nodes.push(new RTSNode(i,
@@ -46,6 +46,46 @@ RTSGame.prototype.init = function(nodeCount, size) {
       20, //TODO placeholder
       i < 2 ? i+1 : 0 //2 players, rest unowned
     ));
+  }
+  for(var i=1; i<nodeCount; i+=2) {
+    var odd = this.nodes[i];
+    var evn = this.nodes[i-1];
+    odd.x = -evn.x;
+    odd.y = -evn.y;
+    odd.pop = evn.pop;
+  }
+  
+  //use the average positions of cells in an approximate voronoi diagram to space out the points
+  var dim = Math.round(Math.sqrt(size));
+  var avgs = [];
+  for(var i=0; i<nodeCount; i++) {
+    avgs[i] = {x:0, y:0, n:0};
+  }
+  
+  for(var xi=0; xi<=dim; xi++) {
+    for(var yi=0; yi<=dim; yi++) {
+      var x = xi*size/dim-size/2;
+      var y = yi*size/dim-size/2;
+      
+      
+      var mini = -1, mindist = Infinity;
+      for(var i=0; i<nodeCount; i++) {
+        var ndx = nodes[i].x - x;
+        var ndy = nodes[i].y - y;
+        var distSq = ndx*ndx+ndy*ndy;
+        if(distSq < mindist) {
+          mini = i;
+          mindist = distSq;
+        }
+      }
+      avgs[mini].x += x;
+      avgs[mini].y += y;
+      avgs[mini].n++;
+    }
+  }
+  for(var i=0; i<nodeCount; i++) {
+    nodes[i].x = avgs[i].x/avgs[i].n;
+    nodes[i].y = avgs[i].y/avgs[i].n;
   }
 };
 

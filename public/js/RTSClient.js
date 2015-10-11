@@ -220,18 +220,11 @@ RTSClient.prototype.sendEvent = function(name, data) {
     });
   }
 }
-var lastx;
 RTSClient.prototype.tick = function(event) {
   this.stats.begin();
   
   if(this.netState === RTSClient.PLAYING) this.game.step(Math.min(event.delta / 1000, 1/30));
   this.update(event);
-  
-  var x =this.game.nodes[0] && this.game.nodes[0].x;
-  if(lastx !== x) {
-    console.log(lastx, x);
-  }
-  lastx = x;
   
   this.stats.end();
 };
