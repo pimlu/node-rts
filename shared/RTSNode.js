@@ -33,10 +33,15 @@ RTSNode.prototype.attack = function(id) {
   //add it to our set of attack state
   this.attacks.push({
     id: id,
+    owner: this.owner,
     time: RTSGBL.now()+RTSGBL.delay,
     dist: 0,
     mode: RTSNode.ATTACKING
   });
+};
+
+RTSNode.prototype.slack = function(id, size) {
+  //FIXME
 };
 
 RTSNode.prototype.step = function(dt, nodes) {
@@ -65,7 +70,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         var tgtAttack = _.find(tgtAttacks, _.matchesProperty('id', this.id));
         if(tgtAttack && attack.dist + tgtAttack.dist > realDist) {
           //if they're friendly, recede
-          if(this.owner === target.owner) {
+          if(attack.owner === tgtAttack.owner) {
             attack.mode = tgtAttack.mode = RTSNode.RECEDING;
           } else { //if they're not friendly, enter WIZARD MODE!
             attack.mode = tgtAttack.mode = RTSNode.WIZARD;
@@ -88,7 +93,7 @@ RTSNode.prototype.step = function(dt, nodes) {
         }
         var dpop = RTSGBL.attSpeed*dt;
         //supply troops, or attack, based on ownership
-        if(target.owner === this.owner) {
+        if(target.owner === attack.owner) {
           //recede if full (don't waste)
           if(target.pop >= target.maxPop) {
             attack.mode = RTSNode.RECEDING;
@@ -96,7 +101,7 @@ RTSNode.prototype.step = function(dt, nodes) {
           }
           target.pop += dpop;
         } else {
-          target.popDrain(RTSGBL.attRatio*dpop, this.owner);
+          target.popDrain(RTSGBL.attRatio*dpop, attack.owner);
         }
         this.popDrain(dpop);
         break;
@@ -107,7 +112,12 @@ RTSNode.prototype.step = function(dt, nodes) {
         attack.dist += ddist;
         if(attack.dist <= 0) attack.dist = 0;
         
-        this.pop -= RTSGBL.attCost*(attack.dist - origDist);
+        var amount = RTSGBL.attCost*(attack.dist - origDist);
+        
+        //TODO slack attack ratio
+        amount *= (attack.owner === this.owner ? 1 : -1);
+        this.popDrain(amount, attack.owner);
+        
         
         if(attack.dist === 0) {
           //remove self from attacks, continue
@@ -154,6 +164,7 @@ RTSNode.prototype.dist = function(node) {
 };
 
 RTSNode.prototype.popDrain = function(amt, source) {
+  if(source === void 0) source = this.id;
   this.pop -= amt;
   if(this.pop < 0) {
     if(this.owner === source) this.pop = 0;

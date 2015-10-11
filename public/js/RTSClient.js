@@ -80,7 +80,7 @@ RTSClient.prototype.stageUp = function(event) {
     //var end = this.field.globalToLocal.apply(this.field, this.dragState.end);
     var nodes = this.game.nodes;
     var nodeConts = this.nodeConts;
-    var src = [], dst = [];
+    var src = [], dst = [], us = [];
     for(var i=0; i<nodes.length; i++) {
       var node = nodes[i];
       //only cut our team's nodes
@@ -100,13 +100,15 @@ RTSClient.prototype.stageUp = function(event) {
         if(intersect) {
           src.push(i);
           dst.push(attack.id);
+          us.push(intersect.u);
         }
       }
     }
     if(src.length) {
       this.game.queueEvent('CUT', this.team, {
         src: src,
-        dst: dst
+        dst: dst,
+        us: us
       });
     }
   }

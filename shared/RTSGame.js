@@ -74,11 +74,18 @@ RTSGame.prototype.doEvent = function(event) {
       event.src.forEach(function(index, i) {
         var node = nodes[index];
         if(!node || event.source !== node.owner) return;
-        //find the matching
+        var target = nodes[event.dst[i]];
+        //find the matching attack
         var attack = node.attacks.find(
-          _.matchesProperty('id', event.dst[i])
+          _.matchesProperty('id', target.id)
         );
         if(!attack) return;
+        if(attack.mode === RTSNode.HITTING) {
+          var cutDist = event.us[i]*node.dist(target);
+          var slack = attack.dist - cutDist;
+          attack.dist = cutDist;
+          target.slack(node.id, slack);
+        }
         attack.mode = RTSNode.RECEDING;
       });
       break;
