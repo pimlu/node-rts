@@ -25,6 +25,12 @@ function RTSClient(div, gameId) {
   this.game = new RTSGame();
   
   this.stage = new createjs.Stage(this.c);
+  
+  this.stage.addEventListener('stagemousedown', this.stageDown.bind(this));
+  this.stage.addEventListener('stagemousemove', this.stageMove.bind(this));
+  this.stage.addEventListener('stagemouseup', this.stageUp.bind(this));
+  this.dragState = null;
+  
   //actual playing field, gets transformed
   this.field = new createjs.Container();
   this.field.x = this.width/2;
@@ -34,6 +40,11 @@ function RTSClient(div, gameId) {
   var nodeConts = this.nodeConts = new createjs.Container();
   this.field.addChild(nodeConts);
   
+  //dashed line for cutting attacks
+  this.cutLine = new createjs.Shape();
+  this.cutLine.mouseEnabled = false;
+  this.stage.addChild(this.cutLine);
+  
   this.selected = [];
   this.team = -1;
   
@@ -42,6 +53,22 @@ function RTSClient(div, gameId) {
 	createjs.Ticker.addEventListener("tick", this.tick.bind(this));
   
 }
+
+RTSClient.prototype.stageDown = function(event) {
+  if(event.relatedTarget) return;
+  var coords = [event.stageX, event.stageY];
+  this.dragState = {start: coords, end: coords.slice()};
+};
+RTSClient.prototype.stageMove = function(event) {
+  if(!this.dragState) return;
+  this.dragState.end = [event.stageX, event.stageY];
+};
+RTSClient.prototype.stageUp = function(event) {
+  if(this.dragState) {
+    this.dragState.end = [event.stageX, event.stageY];
+  }
+  this.dragState = null;
+};
 
 RTSClient.prototype.tick = function(event) {
   
@@ -115,6 +142,20 @@ RTSClient.prototype.tick = function(event) {
       
     }
   }
+  //update the cut
+  var cutLine = this.cutLine;
+  cutLine.graphics.clear();
+  if(this.dragState) {
+    var start = this.dragState.start;
+    var end = this.dragState.end;
+    cutLine.graphics.setStrokeStyle(3).beginStroke('darkgrey')
+      .append({
+        exec: function(ctx, shape) {
+          ctx.setLineDash([10, 10]);
+        }
+      }).moveTo(start[0], start[1]).lineTo(end[0], end[1]);
+  }
+  
   this.stage.update(event);
   
   this.stats.end();
