@@ -2,16 +2,27 @@ var PQ;
 //has game state, no rendering
 function RTSGame() {
   this.nodes = null;
-  this.queue = new PriorityQueue({
+  this.queue = new PQ({
     comparator: function(a, b) {
       return a.time - b.time;
     }
   });
+  
+  this.delta = 0;
+  this.latency = 0;
 }
-
-'ATTACK,CUT'.split(',').forEach(function(v,i) {
-  RTSGame[v] = i;
-});
+//converts our time to server time
+RTSGame.prototype.now = function() {
+  return +new Date() - this.delta;
+};
+//converts a server timestamp to our time
+RTSGame.prototype.trueTime = function(server_t) {
+  return server_t + this.delta - this.latency
+},
+//action delayed now
+RTSGame.prototype.actionTime = function() {
+  return this.now()+this.delay*1000;
+};
 
 if(RTSGBL.isNode) {
   global.RTSGame = RTSGame;
@@ -19,6 +30,11 @@ if(RTSGBL.isNode) {
 } else {
   PQ = PriorityQueue;
 }
+
+'ATTACK,CUT'.split(',').forEach(function(v,i) {
+  RTSGame[v] = i;
+});
+
 
 RTSGame.prototype.init = function(nodeCount, size) {
   this.nodes = [];
@@ -35,7 +51,7 @@ RTSGame.prototype.init = function(nodeCount, size) {
 //receives an amount of time it steps by
 RTSGame.prototype.step = function(dt) {
   var nodes = this.nodes;
-  var now = RTSGBL.now();
+  var now = this.now();
   while(this.queue.length && this.queue.peek().time < now) {
     var nextEvt = this.queue.dequeue();
     this.doEvent(nextEvt);
@@ -89,12 +105,11 @@ RTSGame.prototype.exportState = function() {
 RTSGame.prototype.queueEvent = function(type, source, e, manualTime) {
   e.type = RTSGame[type];
   e.source = source;
-  if(!manualTime) e.time = RTSGBL.actionTime();
+  if(!manualTime) e.time = this.actionTime();
   this.queue.queue(e);
 };
 
 RTSGame.prototype.doEvent = function(event) {
-  log.debug(event);
   var nodes = this.nodes;
   switch(event.type) {
     case RTSGame.ATTACK:

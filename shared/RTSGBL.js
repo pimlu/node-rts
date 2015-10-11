@@ -23,13 +23,6 @@ var RTSGBL = {
   //min pop to hit
   hitPop: 2,
   //how quickly the wizard mode cost increases
-  wizCoef: 0.5,
-  now: function() {
-    //TODO time sync?
-    return +new Date();
-  },
-  actionTime: function() {
-    return RTSGBL.now()+RTSGBL.delay*1000;
-  }
+  wizCoef: 0.5
 };
 if(RTSGBL.isNode) global.RTSGBL = RTSGBL;

@@ -25,7 +25,9 @@ require('./routes.js')(app);
 
 server.on('request', app);
 
-var rtsServer = new require('./RTSServer.js')(server);
+var rtsServer = new (require('./RTSServer.js'))(server);
+
+rtsServer.addRoom('foo');
 
 server.listen(port, function() {
   var host = server.address().address;

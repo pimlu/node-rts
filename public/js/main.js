@@ -1,7 +1,10 @@
 var client;
 $(function() {
-  client = new RTSClient('#frame');//, 'ws://localhost:8080/', 'abcd');
+  var SP = false;
+  client = new RTSClient('#frame', !SP && 'ws://localhost:8080/', !SP && 'abcd');
   //normally happens on the server
-  client.game.init(10, 600);
-  client.team = 1;
+  if(SP) {
+    client.game.init(10, 600);
+    client.team = 1;
+  }
 });

@@ -26,8 +26,9 @@ function RTSClient(div, url, gameId) {
   this.height = 600;
   
   //put a canvas in
+  this.p = $('<p>test</p>');
   this.c = $('<canvas width="'+this.width+'" height="'+this.height+'"></canvas>')[0];
-  $(div).empty().append(this.c).append(stats.domElement);
+  $(div).empty().append(this.p).append(this.c).append(stats.domElement);
   
   this.game = new RTSGame();
   
@@ -77,19 +78,60 @@ function RTSClient(div, url, gameId) {
 
 RTSClient.prototype.onOpen = function() {
   this.netState = RTSClient.SYNCING;
-  syncClient(this.ws, this.onSync.bind(this));
+  syncClient(this.ws, this, this.onSync.bind(this));
 };
 RTSClient.prototype.onSync = function(delta, latency) {
   this.netState = RTSClient.WAITING;
   log.debug(delta, latency);
   this.ws.onerror = this.onError.bind(this);
   this.ws.onmessage = this.onMessage.bind(this);
+  setTimeout(this.getStatus.bind(this), 1000);
+};
+RTSClient.prototype.getStatus = function() {
+  send(this.ws, {
+    type: STATUS
+  });
 };
 RTSClient.prototype.onError = function(error) {
   log.error('WebSocket Error ' + error);
 };
 RTSClient.prototype.onMessage = function(e) {
+  var self = this;
+  
+  var data = decode(e.data);
   log.debug('Server: ' + e.data);
+  if(this.netState === RTSClient.WAITING && data.type === STATUS) {
+    var summary = data.players+'/'+data.needed+' players. <span></span>'; 
+    this.p.html(summary);
+    
+    var timeoutId;
+    function to(fn, time) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(fn, time);
+    }
+    
+    to(function() {
+      send(self.ws, {
+        type: STATUS
+      });
+    }, 500);
+    
+    var step = 0.2;
+    if(data.start) {
+      to(function timeout() {
+        var now = self.game.now();
+        if(data.start - now < step*1000) {
+          to(finish, data.start-now);
+        } else {
+          self.p.find('span').html((data.start-now)+' ms left to start');
+          to(timeout, step*1000);
+        }
+      }, step);
+    }
+    function finish() {
+      self.p.find('span').html('go!');
+    }
+  }
 };
 
 
