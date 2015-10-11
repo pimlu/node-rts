@@ -5,6 +5,10 @@ var RTSGBL = {
   speed: 50,
   //cost in pop per px of attack distance
   attCost: 0.2,
+  //ratio of defender to attacker's losses when attacker directly hits node
+  attRatio: 2,
+  //cost in pop/s to maintain attack
+  attSpeed: 8,
   //network sync delay in seconds
   delay: 0.2,
   //interpolation time on client

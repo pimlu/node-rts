@@ -17,9 +17,17 @@ if(RTSGBL.isNode) global.RTSNode = RTSNode;
 });
 
 RTSNode.prototype.attack = function(id) {
+  //don't attack if you can't afford it
+  if(this.pop < 5) return;
   //don't attack if you are already
-  if(_.find(this.attacks, _.matchesProperty('id', id))) return;
-  //TODO messaging? this should get called after the queue finishes
+  var existing = _.find(this.attacks, _.matchesProperty('id', id));
+  if(existing) {
+    if(existing.mode === RTSNode.RECEDING) {
+      existing.mode = RTSNode.ATTACKING;
+    }
+    return;
+  }
+  //add it to our set of attack state
   this.attacks.push({
     id: id,
     time: RTSGBL.now()+RTSGBL.delay,
@@ -79,7 +87,7 @@ RTSNode.prototype.dist = function(node) {
 };
 
 RTSNode.prototype.getGrowth = function() {
-  return this.size/7+this.pop/6;
+  return this.size/10+this.pop/15;
 };
 
 RTSNode.prototype.getMaxPop = function() {
