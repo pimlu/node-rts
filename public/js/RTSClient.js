@@ -54,11 +54,10 @@ function RTSClient(div, url, gameId) {
   this.stage.addChild(this.cutLine);
   
   this.selected = [];
-  this.team = -1;
   
   //networking code
   //if url is falsy, we do "single player" (lol)
-  if(url) {
+  if(this.url = url) {
     this.ws = new WebSocket(url);
     this.netState = RTSClient.CONNECTING;
     this.ws.onopen = this.onOpen.bind(this);
@@ -132,6 +131,16 @@ RTSClient.prototype.onMessage = function(e) {
     }
     function finish() {
       self.p.html('go! you are '+RTSGBL.pColors[self.game.team]+'!');
+      this.netState = RTSClient.PLAYING;
+    }
+  } else if(data.type === UPDATE) {
+    this.game.importState(data.state);
+    var lagAmt = +new Date() - this.game.trueTime(data.t);
+    //catch up based on server lag
+    while(this.netState === RTSClient.PLAYING && lagAmt>1/60) {
+      var dt = Math.max(lagAmt/1000, 1/60);
+      lagAmt -= dt;
+      this.game.step(dt);
     }
   }
 };
@@ -159,7 +168,7 @@ RTSClient.prototype.stageUp = function(event) {
     for(var i=0; i<nodes.length; i++) {
       var node = nodes[i];
       //only cut our team's nodes
-      if(node.owner !== this.team) continue;
+      if(node.owner !== this.game.team) continue;
       var attacks = node.attacks;
       var data = nodeConts.children[i].children[2]._data;
       for(var j=0; j<attacks.length;j++) {
@@ -180,7 +189,7 @@ RTSClient.prototype.stageUp = function(event) {
       }
     }
     if(src.length) {
-      this.game.queueEvent('CUT', this.team, {
+      this.game.queueEvent('CUT', this.game.team, {
         src: src,
         dst: dst,
         us: us
@@ -189,6 +198,16 @@ RTSClient.prototype.stageUp = function(event) {
   }
   this.dragState = null;
 };
+RTSClient.prototype.sendEvent = function(name, data) {
+  this.game.queueEvent(name, this.game.team, data);
+  if(this.ws) {
+    this.ws.send({
+      type: UPDATE,
+      name: name,
+      data: data
+    });
+  }
+}
 RTSClient.prototype.tick = function(event) {
   this.stats.begin();
   
@@ -295,7 +314,7 @@ RTSClient.prototype.clickCircle = function(index) {
   }
   //selects nodes to command (shift selects multiple)
   //when debugging, the x key overrides
-  if((RTSGBL.debug && xDown) || !zDown && nodes[index].owner === this.team) {
+  if((RTSGBL.debug && xDown) || !zDown && nodes[index].owner === this.game.team) {
     this.selected[index] = !oldSelected[index];
   } else {
     //maps oldSelected to a list of the truthy values in it
@@ -305,10 +324,10 @@ RTSClient.prototype.clickCircle = function(index) {
       .map(_.property('i'));
     //just the nodes with the ability to attack
     var attackers = selectedList.filter(function(v) {
-      return nodes[v].debug(index);
+      return nodes[v].canAttack(index);
     });
     if(attackers.length) { //comands nodes to attack
-      this.game.queueEvent('ATTACK', this.team, {
+      this.game.queueEvent('ATTACK', this.game.team, {
         src: attackers,
         dst: index
       });

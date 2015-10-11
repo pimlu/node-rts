@@ -88,6 +88,7 @@ function RTSServer(server) {
         });
         broadcast({
           type: UPDATE,
+          t: +new Date(),
           state: getRoom().game.exportState()
         });
       }
@@ -105,10 +106,10 @@ function RTSServer(server) {
     function update() {
       var d;
       getRoom().game.step(d=timeDiff());
-      console.log('d = %s',d);
       broadcast(function() {
         return {
           type: UPDATE,
+          t: +new Date(),
           state: getRoom().game.exportState()
         };
       });

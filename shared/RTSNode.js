@@ -45,7 +45,7 @@ RTSNode.prototype.slack = function(node, size) {
   });
 };
 
-RTSNode.prototype.debug = function(node) {
+RTSNode.prototype.canAttack = function(node) {
   var attack = this.getAttackFor(node.id);
   return this.pop >= RTSGBL.attPop && (!attack || attack.owner === this.owner);
 };

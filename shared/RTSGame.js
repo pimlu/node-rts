@@ -10,6 +10,7 @@ function RTSGame() {
   
   this.delta = 0;
   this.latency = 0;
+  this.team = -1;
 }
 //converts our time to server time
 RTSGame.prototype.now = function() {

@@ -1,7 +1,7 @@
 
 var RTSGBL = {
   isNode: typeof window === 'undefined',
-  debug: true,
+  debug: false,
   //player colors for each team
   pColors: ['lightgrey', 'red', 'blue'],
   //pixels per second for attacks
