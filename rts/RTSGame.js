@@ -1,4 +1,5 @@
-var PQ = require('js-priority-queue'), ld = require('lodash');
+var _ = require('lodash');
+var PriorityQueue = require('js-priority-queue');
 
 var RTSGBL = require('./RTSGBL.js');
 var RTSNode = require('./RTSNode.js');
@@ -6,7 +7,7 @@ var RTSNode = require('./RTSNode.js');
 //has game state, no rendering
 function RTSGame() {
   this.nodes = [];
-  this.queue = new PQ({
+  this.queue = new PriorityQueue({
     comparator: function(a, b) {
       return a.time - b.time;
     }
@@ -122,7 +123,7 @@ RTSGame.prototype.importState = function(s) {
     }
     this.nodes.push(node);
   }
-  this.queue = new PQ({
+  this.queue = new PriorityQueue({
     comparator: function(a, b) {
       return a.time - b.time;
     }
@@ -199,7 +200,7 @@ RTSGame.prototype.doEvent = function(event) {
         if(!node || !RTSGBL.debug &&  event.source !== node.owner) return;
         var target = nodes[event.dst[i]];
         //find the matching attack
-        var attack = ld.find(node.attacks, ld.matchesProperty('id', target.id));
+        var attack = _.find(node.attacks, _.matchesProperty('id', target.id));
         if(!attack) return;
         if(attack.mode === RTSNode.HITTING) {
           var cutDist = event.us[i]*node.dist(target);

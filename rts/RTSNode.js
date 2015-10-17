@@ -1,4 +1,4 @@
-var ld = require('lodash');
+var _ = require('lodash');
 
 var RTSGBL = require('./RTSGBL.js');
 
@@ -55,7 +55,7 @@ RTSNode.prototype.canAttack = function(node) {
 };
 
 RTSNode.prototype.getAttackFor = function(id) {
-  return ld.find(this.attacks, ld.matchesProperty('id', id));
+  return _.find(this.attacks, _.matchesProperty('id', id));
 };
 
 RTSNode.prototype.takePop = function(pop, owner) {
