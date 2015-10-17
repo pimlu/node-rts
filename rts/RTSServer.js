@@ -53,15 +53,13 @@ function RTSServer(server) {
       return getRoom().players.indexOf(ws)+1;
     }
     
-    //if data is a function, we evaluate it and send it only if at least one player has an empty buffer
+    //if data is a function, we evaluate it and send it only if at least one player has an almost empty buffer
     function broadcast(data) {
       var computed;
       if(typeof data !== 'function') computed = data;
       getRoom().players.forEach(function(ws) {
-        if(computed === void 0) {
-          if(ws.bufferedAmount > 128) return;
-          computed = data();
-        }
+        if(ws.bufferedAmount > 128) return;
+        if(computed === void 0) computed = data();
         RTSSocket.send(ws, computed);
       });
     }
