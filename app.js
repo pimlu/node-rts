@@ -4,11 +4,6 @@ var bodyParser = require('body-parser');
 var cookieSession = require('cookie-session');
 var port = 8080;
 
-//I know these globals are bad practice, but there will be few and I may refactor later
-['RTSGBL','RTSGame','RTSNode'].forEach(function(name) {
-  require('./shared/'+name+'.js');
-});
-
 var app = express();
 app.set('view engine', 'jade');
 

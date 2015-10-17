@@ -3,18 +3,9 @@ var WebSocketServer = require('ws').Server;
 var NanoTimer = require('nanotimer');
 var _ = require('lodash');
 
-function encode(data) {
-  return JSON.stringify(data);
-}
-function decode(data) {
-  try {
-    return JSON.parse(data);
-  } catch(e) {
-    console.log('parse fail %s', data);
-    console.error(e);
-    return {};
-  }
-}
+var RTSGame = require('./rts/RTSGame.js');
+var RTSSocket = require('./rts/RTSSocket.js');
+
 //https://gist.github.com/manast/1185904
 function interval(duration, fn){
   this.baseline = undefined
@@ -51,7 +42,6 @@ function RTSServer(server) {
   
   this.wss = new WebSocketServer({ server: server });
   
-  var TIME = 0, STATUS = 1, UPDATE = 2;
   this.wss.on('connection', function connection(ws) {
     var location = url.parse(ws.upgradeReq.url, true);
     
@@ -64,9 +54,6 @@ function RTSServer(server) {
       return getRoom().players.indexOf(ws)+1;
     }
     
-    function send(ws, data) {
-      ws.send(encode(data));
-    }
     //if data is a function, we evaluate it and send it only if at least one player has an empty buffer
     function broadcast(data) {
       var computed;
@@ -76,7 +63,7 @@ function RTSServer(server) {
           if(ws.bufferedAmount > 128) return;
           computed = data();
         }
-        send(ws, computed);
+        RTSSocket.send(ws, computed);
       });
     }
     var last = [0,0];
@@ -87,13 +74,12 @@ function RTSServer(server) {
       return diff[0]+diff[1]/1e9;
     };
     
-    ws.on('message', function incoming(msg) {
-      var data = decode(msg);
+    RTSSocket.recv(ws, function incoming(data) {
       //time sync
-      if(data.type === TIME) {
-        send(ws, {type: TIME, t:+new Date()});
+      if(data.type === RTSSocket.TIME) {
+        RTSSocket.send(ws, {type: RTSSocket.TIME, t:+new Date()});
         return;
-      } else if(data.type === STATUS) {
+      } else if(data.type === RTSSocket.STATUS) {
         //create a room if it doesn't exist
         roomNum = data.roomNum;
         var room = getRoom();
@@ -108,19 +94,19 @@ function RTSServer(server) {
           room.start = +new Date() + 3000;
           setTimeout(startRoom.bind(self), 3000);
         }
-        send(ws, {
-          type: STATUS,
+        RTSSocket.send(ws, {
+          type: RTSSocket.STATUS,
           pnum: getPnum(),
           players: players.length,
           needed: room.needed,
           start: room.start
         });
         broadcast({
-          type: UPDATE,
+          type: RTSSocket.UPDATE,
           t: +new Date(),
           state: getRoom().game.exportState()
         });
-      } else if(data.type === UPDATE) {
+      } else if(data.type === RTSSocket.UPDATE) {
         var source = getPnum();
         getRoom().game.queueEvent(data.name, source, data.data);
       }
@@ -148,7 +134,7 @@ function RTSServer(server) {
       room.game.step(d=timeDiff());
       broadcast(function() {
         return {
-          type: UPDATE,
+          type: RTSSocket.UPDATE,
           t: +new Date(),
           state: room.game.exportState()
         };

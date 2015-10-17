@@ -1,4 +1,3 @@
-
 var RTSGBL = {
   isNode: typeof window === 'undefined',
   debug: false,
@@ -25,4 +24,4 @@ var RTSGBL = {
   //how quickly the wizard mode cost increases
   wizCoef: 0.5
 };
-if(RTSGBL.isNode) global.RTSGBL = RTSGBL;
+module.exports = RTSGBL;

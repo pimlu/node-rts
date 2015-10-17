@@ -1,3 +1,6 @@
+var $ = require('jquery');
+var RTSClient = require('./RTSClient.js');
+
 var client;
 $(function() {
   var SP = false;

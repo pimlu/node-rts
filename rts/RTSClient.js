@@ -1,3 +1,16 @@
+var $ = require('jquery');
+var _ = require('lodash');
+var log = require('loglevel');
+
+var Stats = require('stats-js');
+
+var RTSGBL = require('./RTSGBL.js');
+var RTSGame = require('./RTSGame.js');
+var RTSNode = require('./RTSNode.js');
+var RTSSocket = require('./RTSSocket.js');
+var syncClient = require('./syncClient.js');
+var intersection = require('./intersection.js');
+
 function drawCircle(shape, color, rad) {
   shape.graphics.beginFill(color).drawCircle(0, 0, rad);
 }
@@ -81,6 +94,8 @@ function RTSClient(div, url, gameId) {
   
 }
 
+module.exports = RTSClient;
+
 'CONNECTING,SYNCING,WAITING,PLAYING'.split(',').forEach(function(v,i) {
   RTSClient[v] = i;
 });
@@ -93,24 +108,23 @@ RTSClient.prototype.onSync = function(delta, latency) {
   this.netState = RTSClient.WAITING;
   log.debug(delta, latency);
   this.ws.onerror = this.onError.bind(this);
-  this.ws.onmessage = this.onMessage.bind(this);
+  RTSSocket.recv(this.ws, this.onMessage.bind(this));
   setTimeout(this.getStatus.bind(this), 1000);
 };
 RTSClient.prototype.getStatus = function() {
-  send(this.ws, {
-    type: STATUS,
+  RTSSocket.send(this.ws, {
+    type: RTSSocket.STATUS,
     roomNum: this.roomNum
   });
 };
 RTSClient.prototype.onError = function(error) {
   log.error('WebSocket Error ' + error);
 };
-RTSClient.prototype.onMessage = function(e) {
+RTSClient.prototype.onMessage = function(data) {
   var self = this;
   
-  var data = decode(e.data);
   //log.debug('Server: ' + e.data);
-  if(this.netState === RTSClient.WAITING && data.type === STATUS) {
+  if(this.netState === RTSClient.WAITING && data.type === RTSSocket.STATUS) {
     this.game.team = data.pnum;
     var summary = data.players+'/'+data.needed+' players. you are '+
       RTSGBL.pColors[this.game.team]+'. '+
@@ -124,8 +138,8 @@ RTSClient.prototype.onMessage = function(e) {
     }
     
     to(function() {
-      send(self.ws, {
-        type: STATUS,
+      RTSSocket.send(self.ws, {
+        type: RTSSocket.STATUS,
         roomNum: self.roomNum
       });
     }, 500);
@@ -146,7 +160,7 @@ RTSClient.prototype.onMessage = function(e) {
       self.p.html('go! you are '+RTSGBL.pColors[self.game.team]+'!');
       this.netState = RTSClient.PLAYING;
     }
-  } else if(data.type === UPDATE) {
+  } else if(data.type === RTSSocket.UPDATE) {
     this.game.importState(data.state);
     var lagAmt = +new Date() - this.game.trueTime(data.t);
     //catch up based on server lag
@@ -192,7 +206,7 @@ RTSClient.prototype.stageUp = function(event) {
         var p2 = {x: event.stageX, y: event.stageY};
         var q = data[j].q;
         var q2 = data[j].q2;
-        var intersect = doLineSegmentsIntersect(p, p2, q, q2);
+        var intersect = intersection(p, p2, q, q2);
         //if they intersect, push to our lists of sources and destinations
         if(intersect) {
           src.push(i);
@@ -214,8 +228,8 @@ RTSClient.prototype.stageUp = function(event) {
 RTSClient.prototype.sendEvent = function(name, data) {
   this.game.queueEvent(name, this.game.team, data);
   if(this.ws) {
-    send(this.ws, {
-      type: UPDATE,
+    RTSSocket.send(this.ws, {
+      type: RTSSocket.UPDATE,
       name: name,
       data: data
     });

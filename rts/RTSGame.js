@@ -1,4 +1,8 @@
-var PQ, ld = typeof _ === 'undefined' ? require('lodash') : _;;
+var PQ = require('js-priority-queue'), ld = require('lodash');
+
+var RTSGBL = require('./RTSGBL.js');
+var RTSNode = require('./RTSNode.js');
+
 //has game state, no rendering
 function RTSGame() {
   this.nodes = [];
@@ -25,12 +29,7 @@ RTSGame.prototype.actionTime = function() {
   return this.now()+RTSGBL.delay*1000;
 };
 
-if(RTSGBL.isNode) {
-  global.RTSGame = RTSGame;
-  PQ = require('js-priority-queue');
-} else {
-  PQ = PriorityQueue;
-}
+module.exports = RTSGame;
 
 'ATTACK,CUT'.split(',').forEach(function(v,i) {
   RTSGame[v] = i;

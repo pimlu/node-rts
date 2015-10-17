@@ -1,4 +1,6 @@
-var ld = typeof _ === 'undefined' ? require('lodash') : _;
+var ld = require('lodash');
+
+var RTSGBL = require('./RTSGBL.js');
 
 function RTSNode(id, x, y, size, owner) {
   this.id = id;
@@ -10,7 +12,8 @@ function RTSNode(id, x, y, size, owner) {
   this.attacks = [];
   this.wizDur = 0;
 }
-if(RTSGBL.isNode) global.RTSNode = RTSNode;
+
+module.exports = RTSNode;
 
 //enum for modes of attack
 'ATTACKING,HITTING,RECEDING,WIZARD'.split(',').forEach(function(v,i) {
