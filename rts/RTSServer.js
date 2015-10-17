@@ -1,10 +1,9 @@
 var url = require('url');
 var WebSocketServer = require('ws').Server;
-var NanoTimer = require('nanotimer');
 var _ = require('lodash');
 
-var RTSGame = require('./rts/RTSGame.js');
-var RTSSocket = require('./rts/RTSSocket.js');
+var RTSGame = require('./RTSGame.js');
+var RTSSocket = require('./RTSSocket.js');
 
 //https://gist.github.com/manast/1185904
 function interval(duration, fn){
