@@ -1,5 +1,6 @@
 var $ = require('jquery');
 var RTSClient = require('./RTSClient.js');
+window['log'] = require('loglevel');
 
 var client;
 $(function() {

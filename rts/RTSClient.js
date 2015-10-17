@@ -109,6 +109,7 @@ RTSClient.prototype.onSync = function(delta, latency) {
   log.debug(delta, latency);
   this.ws.onerror = this.onError.bind(this);
   RTSSocket.recv(this.ws, this.onMessage.bind(this));
+  //TODO necessary?
   setTimeout(this.getStatus.bind(this), 1000);
 };
 RTSClient.prototype.getStatus = function() {
@@ -158,17 +159,19 @@ RTSClient.prototype.onMessage = function(data) {
     }
     function finish() {
       self.p.html('go! you are '+RTSGBL.pColors[self.game.team]+'!');
-      this.netState = RTSClient.PLAYING;
+      self.netState = RTSClient.PLAYING;
     }
   } else if(data.type === RTSSocket.UPDATE) {
     this.game.importState(data.state);
     var lagAmt = +new Date() - this.game.trueTime(data.t);
+    log.debug(lagAmt);
     //catch up based on server lag
-    while(this.netState === RTSClient.PLAYING && lagAmt>1/60) {
-      var dt = Math.max(lagAmt/1000, 1/60);
-      lagAmt -= dt;
+    while(this.netState === RTSClient.PLAYING && lagAmt>0) {
+      var dt = Math.min(lagAmt/1000, 1/60);
+      lagAmt -= dt*1000;
       this.game.step(dt);
     }
+    
   }
 };
 
@@ -237,7 +240,6 @@ RTSClient.prototype.sendEvent = function(name, data) {
 }
 RTSClient.prototype.tick = function(event) {
   this.stats.begin();
-  
   if(this.netState === RTSClient.PLAYING) this.game.step(Math.min(event.delta / 1000, 1/30));
   this.update(event);
   
