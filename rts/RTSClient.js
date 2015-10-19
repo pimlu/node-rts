@@ -164,7 +164,7 @@ RTSClient.prototype.onMessage = function(data) {
   } else if(data.type === RTSSocket.UPDATE) {
     this.game.importState(data.state);
     var lagAmt = +new Date() - this.game.trueTime(data.t);
-    log.debug(lagAmt);
+    log.trace(lagAmt);
     //catch up based on server lag
     while(this.netState === RTSClient.PLAYING && lagAmt>0) {
       var dt = Math.min(lagAmt/1000, 1/60);
