@@ -2,3 +2,4 @@
 *.log
 /public/js/bower
 .DS_Store
+/.vscode
