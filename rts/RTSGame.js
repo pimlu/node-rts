@@ -197,7 +197,7 @@ RTSGame.prototype.doEvent = function(event) {
     case RTSGame.CUT:
       event.src.forEach(function(index, i) {
         var node = nodes[index];
-        if(!node || !RTSGBL.debug &&  event.source !== node.owner) return;
+        if(!node || !RTSGBL.debug && event.source !== node.owner) return;
         var target = nodes[event.dst[i]];
         //find the matching attack
         var attack = _.find(node.attacks, _.matchesProperty('id', target.id));
