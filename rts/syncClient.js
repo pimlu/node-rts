@@ -19,8 +19,8 @@ function syncClient(ws, obj, cb) {
   var iter = 0;
   RTSSocket.recv(ws, function(data) {
     if(iter === MAX) {
-      lats.sort();
-      deltas.sort();
+      lats = _.sortBy(lats);
+      deltas = _.sortBy(deltas);
       var iters = lats.length;
       //1 std dev
       var included = iters*0.7; //must be an int
