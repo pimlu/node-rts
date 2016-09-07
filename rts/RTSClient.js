@@ -39,7 +39,7 @@ function RTSClient(div, url, gameId) {
   this.height = 600;
   
   //put a canvas in
-  this.p = $('<p>test</p>');
+  this.p = $('<p>Loading...</p>');
   this.c = $('<canvas width="'+this.width+'" height="'+this.height+'"></canvas>')[0];
   $(div).empty().append(this.p).append(this.c).append(stats.domElement);
   
