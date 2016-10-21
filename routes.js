@@ -2,6 +2,7 @@
 
 var express = require('express');
 var browserify = require('browserify-middleware');
+var resolve = require('bower-path');
 
 module.exports = function(app) {
   app.use(express.static('public'));
@@ -11,6 +12,8 @@ module.exports = function(app) {
   }));
   
   app.get('/', function(req, res) {
-    res.render('rts', {});
+    res.render('rts', {
+      easeljs: resolve('easeljs').replace('public','')
+    });
   });
 };
