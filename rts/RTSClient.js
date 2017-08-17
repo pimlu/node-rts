@@ -37,21 +37,21 @@ function RTSClient(div, url, gameId) {
 
   this.width = 800;
   this.height = 600;
-  
+
   //put a canvas in
   this.p = $('<p>Loading...</p>');
   this.c = $('<canvas width="'+this.width+'" height="'+this.height+'"></canvas>')[0];
   $(div).empty().append(this.p).append(this.c).append(stats.domElement);
-  
+
   this.game = new RTSGame();
-  
+
   this.stage = new createjs.Stage(this.c);
-  
+
   this.stage.addEventListener('stagemousedown', this.stageDown.bind(this));
   this.stage.addEventListener('stagemousemove', this.stageMove.bind(this));
   this.stage.addEventListener('stagemouseup', this.stageUp.bind(this));
   this.dragState = null;
-  
+
   //actual playing field, gets transformed
   this.field = new createjs.Container();
   this.field.x = this.width/2;
@@ -60,17 +60,22 @@ function RTSClient(div, url, gameId) {
   //holds each node in our game
   var nodeConts = this.nodeConts = new createjs.Container();
   this.field.addChild(nodeConts);
-  
+
   //dashed line for cutting attacks
   this.cutLine = new createjs.Shape();
   this.cutLine.mouseEnabled = false;
   this.stage.addChild(this.cutLine);
-  
-  this.selected = [];
-  
-  
 
-  
+  //box for selecting stuff
+  this.selectBox = new createjs.Shape();
+  this.selectBox.mouseEnabled = false;
+  this.stage.addChild(this.selectBox);
+
+  this.selected = [];
+
+
+
+
   //networking code
   //if url is falsy, we do "single player" (lol)
   if(this.url = url) {
@@ -80,18 +85,18 @@ function RTSClient(div, url, gameId) {
       history.pushState(null, null, this.roomNum);
     }
     this.roomNum = +this.roomNum.substr(1);
-    
+
     this.ws = new WebSocket(url);
     this.netState = RTSClient.CONNECTING;
     this.ws.onopen = this.onOpen.bind(this);
   } else {
     this.netState = RTSClient.PLAYING;
   }
-  
+
   //RAF on our tick function
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
 	createjs.Ticker.addEventListener("tick", this.tick.bind(this));
-  
+
 }
 
 module.exports = RTSClient;
@@ -123,28 +128,28 @@ RTSClient.prototype.onError = function(error) {
 };
 RTSClient.prototype.onMessage = function(data) {
   var self = this;
-  
+
   //log.debug('Server: ' + e.data);
   if(this.netState === RTSClient.WAITING && data.type === RTSSocket.STATUS) {
     this.game.team = data.pnum;
     var summary = data.players+'/'+data.needed+' players. you are '+
       RTSGBL.pColors[this.game.team]+'. '+
-      (data.players<data.needed?'give someone else this URL!':'')+' <span></span>'; 
+      (data.players<data.needed?'give someone else this URL!':'')+' <span></span>';
     this.p.html(summary);
-    
+
     var timeoutId;
     function to(fn, time) {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(fn, time);
     }
-    
+
     to(function() {
       RTSSocket.send(self.ws, {
         type: RTSSocket.STATUS,
         roomNum: self.roomNum
       });
     }, 500);
-    
+
     var step = 0.03;
     if(data.start) {
       to(function timeout() {
@@ -171,7 +176,7 @@ RTSClient.prototype.onMessage = function(data) {
       lagAmt -= dt*1000;
       this.game.step(dt);
     }
-    
+
   }
 };
 
@@ -180,19 +185,21 @@ RTSClient.prototype.stageDown = function(event) {
   if(event.relatedTarget) return;
   if(!shiftDown) this.selected = [];
   var coords = [event.stageX, event.stageY];
-  this.dragState = {start: coords, end: coords.slice()};
+  this.dragState = {start: coords, end: coords.slice(), shift: shiftDown};
 };
 RTSClient.prototype.stageMove = function(event) {
   if(!this.dragState) return;
   this.dragState.end = [event.stageX, event.stageY];
 };
 RTSClient.prototype.stageUp = function(event) {
-  
-  if(this.dragState) {
-    this.dragState.end = [event.stageX, event.stageY];
+  if(!this.dragState) return;
+
+  var start = this.dragState.start,
+    end = this.dragState.end = [event.stageX, event.stageY];
+  var nodes = this.game.nodes;
+  if(!this.dragState.shift) {
     //var start = this.field.globalToLocal.apply(this.field, this.dragState.start);
     //var end = this.field.globalToLocal.apply(this.field, this.dragState.end);
-    var nodes = this.game.nodes;
     var nodeConts = this.nodeConts;
     var src = [], dst = [], us = [];
     for(var i=0; i<nodes.length; i++) {
@@ -205,8 +212,8 @@ RTSClient.prototype.stageUp = function(event) {
         var attack = attacks[j];
         if(attack.mode === RTSNode.RECEDING) continue;
         //test for intersection
-        var p = {x: this.dragState.start[0], y: this.dragState.start[1]};
-        var p2 = {x: event.stageX, y: event.stageY};
+        var p = {x: start[0], y: start[1]};
+        var p2 = {x: end[0], y: end[1]};
         var q = data[j].q;
         var q2 = data[j].q2;
         var intersect = intersection(p, p2, q, q2);
@@ -225,6 +232,21 @@ RTSClient.prototype.stageUp = function(event) {
         us: us
       });
     }
+  } else {
+    var zipk = function(fn, a, b, k) {
+      return [fn(a[0],b[0]) + k, fn(a[1], b[1]) + k];
+    };
+    for(var i=0; i<nodes.length; i++) {
+      var node = nodes[i];
+      var lo = zipk(Math.min, start, end, -node.size),
+        hi = zipk(Math.max, start, end, node.size);
+      var pt = this.nodeConts.localToGlobal(node.x, node.y);
+      if(!(lo[0] <= pt.x && lo[1] <= pt.y
+        && pt.x <= hi[0] && pt.y <= hi[1])) continue;
+      if((RTSGBL.debug && xDown) || node.owner === this.game.team) {
+        this.selected[i] = true;
+      }
+    }
   }
   this.dragState = null;
 };
@@ -242,13 +264,13 @@ RTSClient.prototype.tick = function(event) {
   this.stats.begin();
   if(this.netState === RTSClient.PLAYING) this.game.step(Math.min(event.delta / 1000, 1/30));
   this.update(event);
-  
+
   this.stats.end();
 };
 RTSClient.prototype.update = function(event) {
-  
+
   var nodes = this.game.nodes;
-  
+
   //make a new set of circles if our # of nodes in easel and the game state don't match
   if(this.nodeConts.numChildren !== nodes.length) {
     this.selected = [];
@@ -262,7 +284,7 @@ RTSClient.prototype.update = function(event) {
       cont.addChild(new createjs.Shape()); //pop
       //add the attacks
       cont.addChild(new createjs.Container());
-      
+
       //listen for clicks
       cont.addEventListener('click', this.clickCircle.bind(this, i));
     }
@@ -277,34 +299,35 @@ RTSClient.prototype.update = function(event) {
     var pop = nodeCont.children[1];
     var attackCont = nodeCont.children[2];
     var playerColor = RTSGBL.pColors[node.owner];
-    
+
     size.graphics.clear();
     if(this.selected[i]) size.graphics.setStrokeStyle(2).beginStroke('black')
     drawCircle(size, 'grey', node.size);
     pop.graphics.clear();
-    var popRatio = node.pop/node.maxPop;
+    //square root is accurate but too strong, picked 2/3 instead
+    var popRatio = Math.pow(node.pop/node.maxPop, 2/3);
     drawCircle(pop, playerColor, node.size*popRatio);
-    
+
     //draw each attack line
     attackCont.removeAllChildren();
     var lines = new createjs.Shape();
     attackCont.addChild(lines);
-    
+
     attackCont._data = [];
     //for each attack, draw a line starting at the edge of the attacker circle
     //moving out dist pixels directly towards the target
     for(var j=0; j<node.attacks.length; j++) {
       var attack = node.attacks[j];
-      
+
       var target = nodes[attack.id];
-      
+
       var dx = target.x - node.x;
       var dy = target.y - node.y;
       var fullDist = Math.sqrt(dx*dx + dy*dy);
-      
+
       var nodeRatio = node.size/fullDist;
       var tgtRatio = attack.dist/fullDist;
-      
+
       var mtDx = dx*nodeRatio, mtDy = dy*nodeRatio;
       var ltDx = mtDx + dx*tgtRatio, ltDy = mtDy + dy*tgtRatio;
       lines.graphics.setStrokeStyle(3).beginStroke(RTSGBL.pColors[attack.owner]);
@@ -319,19 +342,26 @@ RTSClient.prototype.update = function(event) {
   //update the cut
   var cutLine = this.cutLine;
   cutLine.graphics.clear();
+  var box = this.selectBox;
+  box.graphics.clear();
   if(this.dragState) {
     var start = this.dragState.start;
     var end = this.dragState.end;
-    cutLine.graphics.setStrokeStyle(3).beginStroke('darkgrey')
-      .append({
-        exec: function(ctx, shape) {
-          ctx.setLineDash([10, 10]);
-        }
-      }).moveTo(start[0], start[1]).lineTo(end[0], end[1]);
+    if(!this.dragState.shift) {
+      cutLine.graphics.setStrokeStyle(3).beginStroke('darkgrey')
+        .append({
+          exec: function(ctx, shape) {
+            ctx.setLineDash([10, 10]);
+          }
+        }).moveTo(start[0], start[1]).lineTo(end[0], end[1]);
+    } else {
+      box.graphics.setStrokeStyle(2).beginStroke('darkgrey')
+        .drawRect(start[0], start[1], end[0]-start[0], end[1]-start[1]);
+    }
   }
-  
+
   this.stage.update(event);
-  
+
 };
 
 RTSClient.prototype.clickCircle = function(index) {

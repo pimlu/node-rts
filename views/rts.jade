@@ -2,12 +2,12 @@ html
   head
     title node rts
     link(rel='stylesheet' href='/css/main.css')
-    
+
     script(src='#{easeljs}')
 
     script(src='/js/rts.js')
   body
     a(href='/')
       button new game
-    button(onclick='alert("click to select your units. click to attack enemy units.  shift lets you select multiple units. z lets you move troops to other friendlies instead of selecting them.")') instructions
+    button(onclick='alert("click to select your units. click to attack enemy units.  shift lets you select multiple units; shift dragging selects a rectangle. z lets you move troops to other friendlies instead of selecting them.")') instructions
     #frame
