@@ -8,7 +8,7 @@ var RTSSocket = require('./RTSSocket.js');
 //https://gist.github.com/manast/1185904
 function interval(duration, fn){
   this.baseline = undefined
-  
+
   this.run = function(){
     if(this.baseline === undefined){
       this.baseline = new Date().getTime()
@@ -16,7 +16,7 @@ function interval(duration, fn){
     fn()
     var end = new Date().getTime()
     this.baseline += duration
- 
+
     var nextTick = duration - (end - this.baseline)
     if(nextTick<0){
       nextTick = 0
@@ -38,21 +38,21 @@ function RTSServer(server) {
   var self = this;
   this.roomNum = 0;
   this.rooms = {};
-  
+
   this.wss = new WebSocketServer({ server: server });
-  
-  this.wss.on('connection', function connection(ws) {
-    var location = url.parse(ws.upgradeReq.url, true);
-    
+
+  this.wss.on('connection', function connection(ws, req) {
+    var location = url.parse(req.url, true);
+
     var roomNum;
-    
+
     function getRoom() {
       return self.rooms[roomNum];
     }
     function getPnum() {
       return getRoom().players.indexOf(ws)+1;
     }
-    
+
     //if data is a function, we evaluate it and send it only if at least one player has an almost empty buffer
     function broadcast(data) {
       var computed;
@@ -64,13 +64,13 @@ function RTSServer(server) {
       });
     }
     var last = [0,0];
-    
+
     function timeDiff() {
       var diff = process.hrtime(last);
       last = process.hrtime();
       return diff[0]+diff[1]/1e9;
     };
-    
+
     RTSSocket.recv(ws, function incoming(data) {
       //time sync
       if(data.type === RTSSocket.TIME) {
@@ -107,10 +107,10 @@ function RTSServer(server) {
         var source = getPnum();
         getRoom().game.queueEvent(data.name, source, data.data);
       }
-      
+
       //console.log('received: %s', msg);
     });
-    
+
     function startRoom() {
       console.log('startRoom %s', roomNum);
       var room = getRoom();
@@ -120,7 +120,7 @@ function RTSServer(server) {
       room.timer = new interval(1000/60, update);
       room.timer.run();
     }
-    
+
     function update() {
       var d;
       var room = getRoom();
@@ -137,7 +137,7 @@ function RTSServer(server) {
         };
       });
     }
-    
+
     ws.on('close', function close(e) {
       console.log('close %s', e);
       if(roomNum === void 0) return;
@@ -153,10 +153,10 @@ function RTSServer(server) {
         room.timer && room.timer.stop();
         delete self.rooms[roomNum];
       }
-      
+
     });
-    
-    
+
+
   });
 }
 
